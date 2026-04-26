@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+    Logo BalWealth: una balanza dorada en perfecto equilibrio entre
+    Wealth (pila de monedas) y Wellbeing (corazón). El pilar central es
+    también una "B" estilizada — la inicial del juego.
+    -->
+
+    <!-- Sombra base bajo la balanza -->
+    <path
+        android:fillColor="#33000000"
+        android:pathData="M30,82 L78,82 L82,86 L26,86 Z" />
+
+    <!-- Pilar central de la balanza (forma "B" sutil) -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M50,28 L58,28 L58,82 L50,82 Z" />
+    <!-- Detalle "B" estilizado en el pilar -->
+    <path
+        android:fillColor="#0A0E27"
+        android:pathData="M50,32 L57,32 L57,38 L50,38 Z M50,42 L57,42 L57,48 L50,48 Z" />
+
+    <!-- Base/pedestal -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M40,82 L68,82 L70,86 L38,86 Z" />
+    <path
+        android:fillColor="#D18C00"
+        android:pathData="M40,82 L68,82 L68,84 L40,84 Z" />
+
+    <!-- Brazo horizontal de la balanza -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M16,32 L92,32 L92,36 L16,36 Z" />
+
+    <!-- Cadenas (líneas finas a los platos) -->
+    <path
+        android:fillColor="#D18C00"
+        android:pathData="M22,36 L22,46 L24,46 L24,36 Z M84,36 L84,46 L86,46 L86,36 Z" />
+
+    <!-- PLATO IZQUIERDO: Wealth — pila de monedas -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M14,46 L34,46 L32,50 L16,50 Z" />
+    <path
+        android:fillColor="#D18C00"
+        android:pathData="M14,46 L34,46 L34,48 L14,48 Z" />
+    <!-- 3 monedas apiladas -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M18,40 L30,40 L31,44 L17,44 Z" />
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M19,36 L29,36 L30,40 L18,40 Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M20,32 L28,32 L29,36 L19,36 Z" />
+    <!-- Símbolo € en la moneda superior -->
+    <path
+        android:fillColor="#0A0E27"
+        android:pathData="M22,33 L25,33 L25,34 L22,34 Z M22,34 L23,34 L23,35 L22,35 Z" />
+
+    <!-- PLATO DERECHO: Wellbeing — corazón -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M74,46 L94,46 L92,50 L76,50 Z" />
+    <path
+        android:fillColor="#D18C00"
+        android:pathData="M74,46 L94,46 L94,48 L74,48 Z" />
+    <!-- Corazón -->
+    <path
+        android:fillColor="#EF476F"
+        android:pathData="M84,32 C 86,28 92,28 92,33 C 92,38 84,44 84,44 C 84,44 76,38 76,33 C 76,28 82,28 84,32 Z" />
+    <!-- Brillo del corazón -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,32 L82,32 L82,34 L80,34 Z"
+        android:fillAlpha="0.5" />
+
+    <!-- Punto de equilibrio en lo alto -->
+    <path
+        android:fillColor="#06D6A0"
+        android:pathData="M52,24 L56,24 L56,28 L52,28 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53,25 L55,25 L55,27 L53,27 Z"
+        android:fillAlpha="0.7" />
+</vector>

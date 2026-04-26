@@ -1,0 +1,47 @@
+# === Build outputs ===
+build/
+app/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+release/
+
+# === Gradle ===
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# === Android Studio / IntelliJ ===
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.externalNativeBuild
+.cxx/
+
+# === Local config (NUNCA commitear: contiene paths de SDK del usuario) ===
+local.properties
+/local.properties
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+hs_err_pid*
+
+# === Procedural audio assets (153 MB regenerables) ===
+# Para mantener el repo ligero, los wav procedurales NO se versionan.
+# Genera tus propios assets en app/src/main/assets/audio/ o pídelos al autor.
+app/src/main/assets/audio/
+
+# === Keystore (NUNCA commitear) ===
+*.jks
+*.keystore
+key.properties
