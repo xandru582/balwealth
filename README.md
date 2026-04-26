@@ -4,7 +4,7 @@
 
 ### El tycoon que no sabías que necesitabas
 
-**SimCompanies × GTA × Pokémon × Sims × Stardew Valley × F1 Manager**
+**Simulación empresarial · RPG · Mundo abierto 2D · Mini-juegos profundos**
 **·**
 **Single-player · Android · 100% Kotlin + Jetpack Compose**
 
@@ -22,7 +22,7 @@
 
 ## ✨ Resumen
 
-**BalWealth** es un juego de simulación de empresas con alma de RPG, mundo abierto 2D explorable estilo Pokémon, y mini-juegos profundos. **No es una clone** de nada concreto: es un cóctel ambicioso que te deja gestionar una empresa, vivir tu vida, conducir tu coche por la ciudad, montar una familia, comprar un equipo de Fórmula y mucho más — todo en una sola app, sin DLC, sin login, sin ads.
+**BalWealth** es un juego original de simulación con alma de RPG, mundo abierto 2D explorable y mini-juegos profundos. Es un cóctel ambicioso que te deja gestionar tu empresa, vivir tu vida personal, conducir tu coche por la ciudad, montar familia, gestionar un equipo de monoplazas y mucho más — todo en una sola app, sin DLC, sin login, sin ads.
 
 > **¿Por qué se llama BalWealth?** Por el **BalWealth Index**: un score único 0-100 que mide el equilibrio entre tu **riqueza, empleados, comunidad y mente**. Si te haces millonario pero descuidas todo lo demás, el juego te castiga con eventos de "revolución" y burnout. La verdadera victoria es el equilibrio.
 
@@ -30,13 +30,13 @@
 
 ## 🎮 Sistemas que ya están en el juego
 
-### 🧑‍💼 Personaje (RPG — estilo Torn City)
+### 🧑‍💼 Personaje (RPG stat-based)
 - **5 atributos**: Inteligencia, Fuerza, Carisma, Suerte, Destreza.
 - Energía, felicidad, nivel, XP, **caja personal** separada de la corporativa.
 - **Entrenamiento** (10 ⚡ por punto), trabajo, descanso.
 - Avatar **personalizable** (pelo, ropa, accesorios) con render pixel-art propio.
 
-### 🏢 Empresa (estilo SimCompanies / Virtonomics)
+### 🏢 Empresa (cadenas de producción reales)
 - **11 tipos de edificios**: Granja, Aserradero, Mina, Panadería, Fundición, Refinería, Fábrica, Oficina, Joyería, Astillero, Almacén.
 - **Cadenas de producción reales**: `hierro + carbón → lingote → acero → engranaje → motor → coche`.
 - **30+ recetas base** + **30 recetas avanzadas** con sistema de **calidad** (Pobre → Estándar → Buena → Premium → Ultra → Obra Maestra), cada tier multiplica el precio de venta.
@@ -91,7 +91,7 @@
 
 ---
 
-## 🌍 Mundo 2D explorable (estilo Pokémon)
+## 🌍 Mundo 2D explorable
 
 Render engine **propio** sobre Compose Canvas — sin librerías de juegos.
 
@@ -108,10 +108,10 @@ Render engine **propio** sobre Compose Canvas — sin librerías de juegos.
 - **Tráfico** (vehículos en carreteras), **NPCs** caminando, **mascotas** que te siguen.
 
 ### 🚗 Coches y conducción
-- **Concesionario con 25 modelos** en 9 marcas reales-fictícias.
-- 10 tipos de carrocería: hatchback, sedan, SUV, coupé, descapotable, supercoche, limusina, pod eléctrico, clásico, camión.
+- **Concesionario con 25 modelos** ficticios en 9 marcas inventadas.
+- 10 tipos de carrocería: hatchback, sedán, SUV, coupé, descapotable, deportivo, limusina, pod eléctrico, clásico, camión.
 - Repintar (10 colores), vender (refund 70%), **conducir** por la ciudad (10x velocidad), garaje ampliable.
-- **Faros direccionales reales**, llamas de escape en supercoches, spoiler animado.
+- **Faros direccionales reales**, llamas de escape en deportivos, spoiler animado.
 
 ### 🐶 Vida y familia
 - **7 mascotas** (perro, gato, loro, hámster, conejo, zorro, dragoncito) con hambre/felicidad, te siguen respetando paredes.
@@ -120,7 +120,7 @@ Render engine **propio** sobre Compose Canvas — sin librerías de juegos.
 - **Casa decorable**: 17 tipos de mueble (cama, sofá, mesa, TV, piano, acuario, etc.) con sistema de placement por área (no overlap).
 
 ### 👽 Eventos y encuentros
-- **50 eventos aleatorios** al pisar tile (estilo Pokémon): cartera en el suelo, mendigo, músico callejero, trato con dealer, ovni…
+- **50 eventos aleatorios** al pisar tile: cartera en el suelo, mendigo, músico callejero, trato con dealer, ovni…
 - **Avistamientos OVNI** raros (1 cada ~50 min in-game).
 - **NPC follower**: alguien se te acerca con UNA pregunta, tienes 35s para decidir.
 
@@ -132,11 +132,11 @@ Render engine **propio** sobre Compose Canvas — sin librerías de juegos.
 
 ## 🏁 Formula Manager (mini-juego AAA dentro del juego)
 
-Sistema **completo** para gestionar un equipo de Fórmula. Casi un juego dentro del juego.
+Sistema **completo** para gestionar un equipo de monoplazas. Casi un juego dentro del juego. **Todos los nombres de equipos y pilotos son inventados.**
 
 ### Lo que tienes
-- **16 circuitos icónicos**: Mónaco, Monza, Spa, Silverstone, Suzuka, Interlagos, Nürburgring, Catalunya, Imola, Bahréin, Marina Bay, Zandvoort, COTA, Hermanos Rodríguez, Yas Marina, Hungaroring. Cada uno con longitud, vueltas, curvas, dificultad, downforce y premio base 580k–850k €.
-- **10 equipos comprables** desde **9.5M €** (Phoenix Garage 🇳🇱) hasta **320M €** (Apex Racing 🇮🇹, 7× campeón).
+- **16 circuitos ficticios** repartidos por el mundo, cada uno con longitud, vueltas, curvas, dificultad, downforce y premio base 580k–850k €.
+- **10 equipos comprables** desde **9.5M €** hasta **320M €**.
 - **32 pilotos** con stats únicos: skill, aggression, consistency + **6 specialties** (rain, street, high-speed, qualifying, tyre management, overtaking).
 - **24 patrocinadores** en 5 tiers (🥉 Bronce → 🥈 Plata → 🥇 Oro → 💎 Platino → 👑 Titanio). Pagos diarios 20k–240k € + bonus por victoria, podio, y por punto. Brand value mínimo requerido (20-92).
 - **21 técnicos** en 5 roles (Ingeniero de Pista, Estratega, Aerodinámico, Jefe de Motor, Especialista de Neumáticos), cada uno con rating 50-96. Bonus al rendimiento del equipo cap +20%.
@@ -148,7 +148,7 @@ Sistema **completo** para gestionar un equipo de Fórmula. Casi un juego dentro 
 - 📜 **Firmar/cancelar sponsorships** con primas 150k–5.5M € y duraciones 90-365 días.
 - 👨‍🔧 **Contratar/despedir personal técnico** (1 por rol).
 - 🏁 **Ver simulación de carrera** (1 por semana in-game): fórmula 60% piloto + 35% coche + 5% suerte + matches por specialty/circuito + bonus de staff.
-- 🏆 **Disputar championship**: 16 carreras por temporada → campeón de pilotos + constructores. Si tu equipo gana: bonus 12M €.
+- 🏆 **Disputar campeonato**: 16 carreras por temporada → campeón de pilotos + constructores. Si tu equipo gana: bonus 12M €.
 
 ### Datos y tablas
 - **Mundial de Pilotos** + **Mundial de Constructores** (top 10 por puntos).
@@ -156,7 +156,7 @@ Sistema **completo** para gestionar un equipo de Fórmula. Casi un juego dentro 
 - **Récords por circuito**: lap record holder + tiempo + temporada, último ganador, dominador (más wins).
 - **Stats detalladas all-time** por piloto: starts, wins, podios, poles, fastest laps, DNFs, current+longest win streak, win rate %, podium rate %, average finish, best season points, championships.
 - **Tabla de naciones** (top países por victorias acumuladas).
-- **Hall of Fame** con palmarés histórico: campeones por temporada (driver + constructor), equipos más laureados, pilotos con más mundiales (Schumacher/Hamilton style).
+- **Hall of Fame** con palmarés histórico: campeones por temporada (driver + constructor), equipos más laureados, pilotos con más mundiales.
 
 ---
 
@@ -275,12 +275,18 @@ El proyecto pasó por **18 oleadas de QA automatizado** con agentes especializad
 | Versión | Cambios principales |
 |---------|---------------------|
 | **v16-formula-pro** | Formula Manager Pro: 24 sponsors, 21 tech staff, records por circuito, hall of fame, tabla de naciones, specialties por piloto |
-| **v15-formula** | Formula Manager: 16 circuitos, 10 equipos, 32 pilotos, championship con 16 carreras |
+| **v15-formula** | Formula Manager: 16 circuitos, 10 equipos, 32 pilotos, campeonato con 16 carreras |
 | **v14-world** | 2ª ola visual: lampposts con cono de luz, plaza ornamental, fountain con water spray, niebla atmosférica, partículas de polen |
 | **v13-world** | 1ª ola visual: cielo con sol/nubes/pájaros/god rays, árboles con clusters de hojas, edificios con ventanas iluminadas |
 | **v12-fixes** | Música determinista (no se resetea al cambiar tab), pause en background con LifecycleObserver, dividendos generosos (yields 6-22% APR + frecuencia /52) |
 | **v11-fixes** | Round 2 QA: contract penalty no deja cash negativo, save races con Mutex, onCleared sincrónico, worldEvent timeout |
 | **v10-fixes** | Round 1 QA: 200+ bugs arreglados (exploits, crashes, tutorial misfires, walkable checks) |
+
+---
+
+## ⚖️ Aviso legal
+
+Este proyecto es una **obra original** desarrollada de forma independiente. Todos los nombres de equipos, pilotos, marcas, circuitos, productos, edificios, recetas y NPCs **son ficticios e inventados** por el autor. Cualquier parecido con marcas, personajes, eventos o nombres reales es **pura coincidencia** y **no implica relación alguna**. No está afiliado, patrocinado ni respaldado por ninguna entidad real. La música es **procedural y generada matemáticamente**. El código es 100% propio.
 
 ---
 
