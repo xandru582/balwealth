@@ -93,6 +93,10 @@ private val SubScreens = listOf(
     SubScreen("sidequests", "Misiones secundarias", "🎯", "Encargos de NPCs"),
     SubScreen("npcs", "Contactos", "🧑‍🤝‍🧑", "Personajes que conoces"),
     SubScreen("racing", "Formula Manager", "🏁", "Compra un equipo, ficha pilotos y gana el campeonato"),
+    SubScreen("crypto", "Mercado cripto", "🪙", "Tokens volátiles, staking, mining, rugpulls"),
+    SubScreen("disasters", "Sala de crisis", "🌪️", "Desastres dinámicos, seguro, mitigación"),
+    SubScreen("daily", "Retos diarios", "🎯", "3 retos cada día + reto semanal con racha"),
+    SubScreen("heists", "Inframundo (heists)", "🦹", "Atracos planificados con tripulación y heat"),
     SubScreen("settings", "Ajustes", "⚙️", "Audio, velocidad, partida")
 )
 
@@ -470,6 +474,10 @@ private fun SubScreenHost(
                 "sidequests" -> SideQuestsScreen(state, vm)
                 "npcs" -> NpcsScreen(state, vm)
                 "racing" -> RacingScreen(state, vm)
+                "crypto" -> CryptoScreen(state, vm)
+                "disasters" -> DisastersScreen(state, vm)
+                "daily" -> DailyChallengesScreen(state, vm)
+                "heists" -> HeistsScreen(state, vm)
                 "settings" -> MoreScreen(state, vm)
             }
         }

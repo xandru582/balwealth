@@ -338,6 +338,37 @@ object GameEngine {
             }
         }
 
+        // ===================== v17 hooks =====================
+
+        // 24) Crypto: precios cada 10s, day-tick al cambio de día.
+        if (s2.crypto.unlocked) {
+            if (nextTick % 10L == 0L) {
+                s2 = CryptoEngine.tickPrices(s2, rng)
+            }
+            if (nextTick % 1_440L == 0L) {
+                s2 = CryptoEngine.dailyTick(s2, rng)
+            }
+        }
+
+        // 25) Desastres: tick diario.
+        if (nextTick % 1_440L == 0L) {
+            s2 = DisasterEngine.tickDaily(s2, rng)
+        }
+
+        // 26) Retos diarios: refresh + evaluación al cambio de día.
+        if (nextTick % 1_440L == 0L) {
+            s2 = DailyChallengeEngine.tickDaily(s2, rng)
+            s2 = DailyChallengeEngine.evaluateAndAutoClaim(s2)
+        } else if (nextTick % 60L == 0L) {
+            // Re-evaluar cada minuto in-game para que la barra avance en vivo.
+            s2 = DailyChallengeEngine.evaluateAndAutoClaim(s2)
+        }
+
+        // 27) Heists: tick diario (heat decay, refresh pool, gating).
+        if (s2.heists.unlocked && nextTick % 1_440L == 0L) {
+            s2 = HeistEngine.tickDaily(s2, rng)
+        }
+
         return s2
     }
 

@@ -512,4 +512,41 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = GameEngine.refreshRealEstate(_state.value)
         _state.value = RivalEngine.ensureInitialized(_state.value)
     }
+
+    // ===================== v17 — Cripto =====================
+    fun cryptoUnlock() = mutate { CryptoEngine.unlock(it) }
+    fun cryptoBuy(symbol: String, qty: Double) = mutate { CryptoEngine.buy(it, symbol, qty) }
+    fun cryptoSell(symbol: String, qty: Double) = mutate { CryptoEngine.sell(it, symbol, qty) }
+    fun cryptoStake(symbol: String, qty: Double, days: Int) =
+        mutate { CryptoEngine.stake(it, symbol, qty, days) }
+    fun cryptoUnstake(symbol: String) = mutate { CryptoEngine.unstake(it, symbol) }
+    fun cryptoAssignMiners(symbol: String, delta: Int) =
+        mutate { CryptoEngine.assignMiners(it, symbol, delta) }
+    fun cryptoClaimMining(symbol: String) = mutate { CryptoEngine.claimMining(it, symbol) }
+
+    // ===================== v17 — Desastres =====================
+    fun disasterToggleInsurance(on: Boolean) =
+        mutate { DisasterEngine.toggleInsurance(it, on) }
+    fun disasterMitigate(disasterId: String, strategy: MitigationStrategy) =
+        mutate { DisasterEngine.mitigate(it, disasterId, strategy) }
+
+    // ===================== v17 — Retos diarios =====================
+    fun claimChallenge(challengeId: String) =
+        mutate { DailyChallengeEngine.claim(it, challengeId) }
+    fun markCasinoVisited() = mutate { DailyChallengeEngine.markCasinoVisited(it) }
+
+    // ===================== v17 — Heists =====================
+    fun heistsUnlock() = mutate { HeistEngine.unlock(it) }
+    fun heistRecruit(crewId: String) = mutate { HeistEngine.recruit(it, crewId) }
+    fun heistFireCrew(crewId: String) = mutate { HeistEngine.fireCrew(it, crewId) }
+    fun heistPlan(
+        heistInstanceId: String,
+        crewIds: List<String>,
+        approach: HeistApproach,
+        gearSpend: Double
+    ) = mutate {
+        HeistEngine.planHeist(it, heistInstanceId, crewIds, approach, gearSpend)
+    }
+    fun heistExecute(heistInstanceId: String) =
+        mutate { HeistEngine.execute(it, heistInstanceId) }
 }
