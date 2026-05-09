@@ -72,7 +72,14 @@ data class CryptoHolding(
     /** Empleados asignados a minar este token. */
     val minersAssigned: Int = 0,
     /** Coste medio de adquisición (€/token), para PnL. */
-    val avgCost: Double = 0.0
+    val avgCost: Double = 0.0,
+    /**
+     * True si el jugador llegó a comprar este token alguna vez. Sirve para
+     * detectar correctamente "rugpull survivor" tras vender al 100% (donde
+     * tanto `amount` como `avgCost` quedan a 0 y se perdería la pista).
+     * Default false — saves antiguos cargan sin romperse.
+     */
+    val wasEverBought: Boolean = false
 )
 
 /** Estado global del subsistema crypto. */

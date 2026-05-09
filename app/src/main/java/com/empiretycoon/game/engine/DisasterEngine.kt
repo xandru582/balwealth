@@ -33,9 +33,11 @@ object DisasterEngine {
             }
         }
 
-        // Spawn de desastre
+        // Spawn de desastre. Forzamos cooldown >= 1 día por defensa: si por bug
+        // de migración o data corrupta llegara a 0 podría spawn cada día.
         val daysSinceLast = s.day - ds.lastDisasterDay
-        val canSpawn = daysSinceLast >= ds.cooldownDays && ds.active.isEmpty()
+        val effectiveCooldown = max(1, ds.cooldownDays)
+        val canSpawn = daysSinceLast >= effectiveCooldown && ds.active.isEmpty()
         if (canSpawn && rng.nextDouble() < DAILY_TRIGGER) {
             val kind = pickKind(rng)
             val severity = pickSeverity(rng, s.day)
@@ -162,7 +164,10 @@ object DisasterEngine {
             mitigated = true,
             productionMul = (d.productionMul + prodImp).coerceAtMost(1.0),
             sellPriceMul = (d.sellPriceMul + sellImp).coerceIn(0.1, 2.0),
-            buyPriceMul = (d.buyPriceMul - buyImp).coerceAtLeast(0.5)
+            // Cap simétrico (0.5..2.0) por uniformidad con sellPriceMul, evita
+            // que un buyPriceMul "heredado" alto quede sin techo si el desastre
+            // base lo hubiera subido.
+            buyPriceMul = (d.buyPriceMul - buyImp).coerceIn(0.5, 2.0)
         )
         val newActive = ds.active.map { if (it.id == disasterId) newD else it }
         val updated = state.copy(

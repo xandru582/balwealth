@@ -134,6 +134,13 @@ object HeistEngine {
         }
         val def = HeistCatalog.byType(inst.type) ?: return state
 
+        // Sin tripulación, la fórmula de éxito (teamSkillAvg/99 - difficulty/100)
+        // garantizaba siempre DISASTER. Mejor cortar antes con un mensaje claro.
+        if (crewIds.isEmpty()) {
+            return notify(state, NotificationKind.ERROR, "Sin tripulación",
+                "Necesitas al menos un miembro de la tripulación para planificar el golpe.")
+        }
+
         // Verificar tripulación
         val crew = crewIds.mapNotNull { id -> hs.crewPool.find { it.id == id } }
             .filter { it.id in hs.recruitedCrew }
@@ -164,7 +171,11 @@ object HeistEngine {
     fun execute(state: GameState, heistInstanceId: String): GameState {
         val hs = state.heists
         val inst = hs.heists.find { it.id == heistInstanceId } ?: return state
-        if (inst.status != HeistStatus.PLANNING || inst.plan == null) return state
+        if (inst.status != HeistStatus.PLANNING) return state
+        // Extraemos plan a una val local: si en algún punto del flujo `plan`
+        // pasara a null (re-entrada, save migration parcial...) evitamos NPE
+        // y, de paso, el smart-cast en Kotlin queda explícito.
+        val plan = inst.plan ?: return state
         val def = HeistCatalog.byType(inst.type) ?: return state
         val rng = Random(state.tick xor inst.id.hashCode().toLong())
 
@@ -173,14 +184,14 @@ object HeistEngine {
         //   + approach matching (loud bonus si requiere SHARPSHOOTER, stealth si HACKER, negotiate baja heat)
         //   + gear bonus (gearSpend / 200_000)
         //   - difficulty / 100
-        val crew = inst.plan.crewIds.mapNotNull { id -> hs.crewPool.find { it.id == id } }
+        val crew = plan.crewIds.mapNotNull { id -> hs.crewPool.find { it.id == id } }
         val teamAvgSkill = if (crew.isNotEmpty()) crew.sumOf { it.skill } / crew.size.toDouble() else 0.0
-        val approachBonus = when (inst.plan.approach) {
+        val approachBonus = when (plan.approach) {
             HeistApproach.LOUD -> if (CrewRole.SHARPSHOOTER in crew.map { it.role }) 0.10 else -0.05
             HeistApproach.STEALTH -> if (CrewRole.HACKER in crew.map { it.role }) 0.10 else -0.05
             HeistApproach.NEGOTIATE -> if (CrewRole.LEADER in crew.map { it.role }) 0.05 else -0.10
         }
-        val gearBonus = (inst.plan.gearSpent / 250_000.0).coerceAtMost(0.30)
+        val gearBonus = (plan.gearSpent / 250_000.0).coerceAtMost(0.30)
         val luckBonus = (state.player.stats.luck - 5) * 0.005
 
         val score = (teamAvgSkill / 99.0) + approachBonus + gearBonus + luckBonus -
@@ -204,7 +215,7 @@ object HeistEngine {
         val grossLoot = def.baseReward * rewardMul
         val cutPaid = grossLoot * crew.sumOf { it.cutPct }
         val net = max(0.0, grossLoot - cutPaid)
-        val gearLoss = if (outcome == HeistOutcome.DISASTER) inst.plan.gearSpent * lossMul else 0.0
+        val gearLoss = if (outcome == HeistOutcome.DISASTER) plan.gearSpent * lossMul else 0.0
         val heatGain = (def.heatBase * heatMul).toInt()
 
         var s = state.copy(

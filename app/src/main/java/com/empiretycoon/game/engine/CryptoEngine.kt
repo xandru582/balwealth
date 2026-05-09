@@ -99,9 +99,11 @@ object CryptoEngine {
                     body = "El equipo ha vaciado el contrato. Precio -90%. Holders rotos.",
                     kind = "RUGPULL"
                 ))
-                // Survivor: el jugador ALGUNA VEZ compró pero ya está fuera (amount = 0, avgCost > 0)
+                // Survivor: el jugador ALGUNA VEZ compró este token (wasEverBought) y
+                // ahora tiene posición ~0. El check anterior usaba avgCost>0 pero
+                // sell() resetea avgCost a 0.0 al vender 100%, así que se perdía la pista.
                 val h = crypto.holding(st.symbol)
-                if (h != null && h.amount <= 0.000001 && h.avgCost > 0.0) survivedThisTick++
+                if (h != null && h.wasEverBought && h.amount <= 0.000001) survivedThisTick++
                 st.copy(price = st.price * 0.10, rugged = true, sentiment = -1.0)
             } else {
                 // Decay de sentimiento hacia 0
@@ -234,7 +236,7 @@ object CryptoEngine {
         val newAvg = if (totalAmount > 0) {
             (h.amount * h.avgCost + qty * askPrice) / totalAmount
         } else askPrice
-        val updatedH = h.copy(amount = totalAmount, avgCost = newAvg)
+        val updatedH = h.copy(amount = totalAmount, avgCost = newAvg, wasEverBought = true)
         val newHoldings = upsertHolding(state.crypto.holdings, updatedH)
         val newCompany = state.company.copy(cash = state.company.cash - total)
         return notify(
@@ -322,8 +324,14 @@ object CryptoEngine {
         if (!state.crypto.unlocked) return state
         val h = state.crypto.holdingOrEmpty(symbol)
         val totalMiners = state.crypto.holdings.sumOf { it.minersAssigned }
-        val freeEmployees = state.company.employees.count { it.assignedBuildingId == null } - totalMiners + h.minersAssigned
-        val newCount = (h.minersAssigned + delta).coerceIn(0, max(0, freeEmployees))
+        val unassigned = state.company.employees.count { it.assignedBuildingId == null }
+        // Capacidad para AÑADIR mineros = empleados sin asignar - mineros que ya
+        // están minando (en otros tokens). Puede ser 0 o incluso negativa si la
+        // empresa quedó descuadrada por bugs previos. Importante: aún si la
+        // capacidad es 0, debemos permitir DECREMENTAR mineros existentes.
+        val addCapacity = max(0, unassigned - (totalMiners - h.minersAssigned))
+        val maxAllowed = max(h.minersAssigned, addCapacity)
+        val newCount = (h.minersAssigned + delta).coerceIn(0, maxAllowed)
         val newH = h.copy(minersAssigned = newCount)
         return state.copy(crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH)))
     }
