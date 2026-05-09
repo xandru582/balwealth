@@ -549,4 +549,18 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun heistExecute(heistInstanceId: String) =
         mutate { HeistEngine.execute(it, heistInstanceId) }
+
+    // ===================== v17 — Asistente IA =====================
+    fun companionUnlock(personality: CompanionPersonality, name: String = "") =
+        mutate { AICompanionEngine.unlock(it, personality, name) }
+    fun companionSetPersonality(personality: CompanionPersonality) =
+        mutate { AICompanionEngine.setPersonality(it, personality) }
+    fun companionRename(newName: String) =
+        mutate { AICompanionEngine.rename(it, newName) }
+    fun companionAcknowledge(tipId: String) =
+        mutate { AICompanionEngine.acknowledge(it, tipId) }
+    fun companionDismiss(tipId: String) =
+        mutate { AICompanionEngine.dismiss(it, tipId) }
+    fun companionClearAll() =
+        mutate { AICompanionEngine.clearAll(it) }
 }

@@ -97,6 +97,7 @@ private val SubScreens = listOf(
     SubScreen("disasters", "Sala de crisis", "🌪️", "Desastres dinámicos, seguro, mitigación"),
     SubScreen("daily", "Retos diarios", "🎯", "3 retos cada día + reto semanal con racha"),
     SubScreen("heists", "Inframundo (heists)", "🦹", "Atracos planificados con tripulación y heat"),
+    SubScreen("companion", "Asistente IA", "🤖", "Tips priorizados sobre tu situación: nóminas, riesgos, oportunidades"),
     SubScreen("settings", "Ajustes", "⚙️", "Audio, velocidad, partida")
 )
 
@@ -478,6 +479,7 @@ private fun SubScreenHost(
                 "disasters" -> DisastersScreen(state, vm)
                 "daily" -> DailyChallengesScreen(state, vm)
                 "heists" -> HeistsScreen(state, vm)
+                "companion" -> CompanionScreen(state, vm)
                 "settings" -> MoreScreen(state, vm)
             }
         }

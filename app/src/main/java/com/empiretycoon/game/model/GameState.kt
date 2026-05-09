@@ -143,7 +143,10 @@ data class GameState(
     val dailyChallenges: DailyChallengeState = DailyChallengeState(),
 
     /** v17 — Heists y mini-juego roguelike de atracos. */
-    val heists: HeistState = HeistState()
+    val heists: HeistState = HeistState(),
+
+    /** v17 — Asistente IA (heurísticas locales, no remoto). */
+    val aiCompanion: AICompanionState = AICompanionState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()

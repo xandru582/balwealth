@@ -369,6 +369,10 @@ object GameEngine {
             s2 = HeistEngine.tickDaily(s2, rng)
         }
 
+        // 28) Asistente IA: re-analiza el estado cada 5 min in-game (interno).
+        // Sale rápido si no toca todavía.
+        s2 = AICompanionEngine.tick(s2)
+
         return s2
     }
 
