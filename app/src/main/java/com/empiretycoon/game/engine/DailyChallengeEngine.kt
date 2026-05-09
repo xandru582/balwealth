@@ -52,7 +52,7 @@ object DailyChallengeEngine {
             ChallengeKind.NO_CASINO ->
                 if (dc.visitedCasinoToday) 0L else c.target
             ChallengeKind.DRIVE_DISTANCE ->
-                ((s.world.avatar.x.toLong() + s.world.avatar.y.toLong() + dc.snapshotTilesDriven) - dc.snapshotTilesDriven).coerceAtLeast(0)
+                ((s.world.avatar.x.toLong() + s.world.avatar.y.toLong()) - dc.snapshotTilesDriven).coerceAtLeast(0L)
             else -> c.progress
         }
         return c.copy(progress = newProgress)

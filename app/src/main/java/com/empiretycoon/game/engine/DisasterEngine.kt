@@ -95,8 +95,8 @@ object DisasterEngine {
         when (d.kind) {
             DisasterKind.EARTHQUAKE, DisasterKind.HURRICANE, DisasterKind.FIRE -> {
                 val buildings = s.company.buildings
-                val damaged = (buildings.size * 0.20 * sevMag).toInt().coerceIn(1, buildings.size)
-                if (damaged > 0 && buildings.isNotEmpty()) {
+                if (buildings.isNotEmpty()) {
+                    val damaged = (buildings.size * 0.20 * sevMag).toInt().coerceIn(1, buildings.size)
                     val toHit = buildings.shuffled(rng).take(damaged).map { it.id }.toSet()
                     val newBuildings = buildings.map { b ->
                         if (b.id in toHit) b.copy(level = max(1, b.level - 1)) else b

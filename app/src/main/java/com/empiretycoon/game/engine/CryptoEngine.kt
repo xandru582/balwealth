@@ -247,7 +247,7 @@ object CryptoEngine {
 
     fun sell(state: GameState, symbol: String, qty: Double): GameState {
         if (!state.crypto.unlocked) return state
-        if (qty <= 0.0) return state
+        if (qty <= 0.0) return notify(state, NotificationKind.ERROR, "Cantidad inválida", "qty debe ser > 0.")
         val tok = state.crypto.token(symbol) ?: return state
         val h = state.crypto.holdingOrEmpty(symbol)
         if (h.amount < qty - 0.000001) {
@@ -278,6 +278,8 @@ object CryptoEngine {
 
     fun stake(state: GameState, symbol: String, qty: Double, days: Int): GameState {
         if (!state.crypto.unlocked) return state
+        if (qty <= 0.0) return notify(state, NotificationKind.ERROR, "Cantidad inválida", "qty debe ser > 0.")
+        if (days <= 0) return notify(state, NotificationKind.ERROR, "Días inválidos", "Los días de stake deben ser > 0.")
         val def = CryptoCatalog.byMatching(symbol) ?: return state
         val h = state.crypto.holdingOrEmpty(symbol)
         if (h.amount < qty) return notify(state, NotificationKind.ERROR, "Sin saldo", "Necesitas $qty $symbol líquidos.")
