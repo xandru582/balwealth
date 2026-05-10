@@ -590,4 +590,17 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     // ===================== v17 — TraitTree =====================
     fun traitTreeUnlock(traitId: String) = mutate { TraitTreeEngine.unlock(it, traitId) }
+
+    // ===================== v17 — Empresas de oficios =====================
+    fun jobBusinessOpen(jobId: JobId) = mutate { JobBusinessEngine.openBusiness(it, jobId) }
+    fun jobBusinessClose(jobId: JobId) = mutate { JobBusinessEngine.closeBusiness(it, jobId) }
+    fun jobBusinessUpgrade(jobId: JobId) = mutate { JobBusinessEngine.upgradeBusiness(it, jobId) }
+    fun jobBusinessRefreshCandidates() =
+        mutate { JobBusinessEngine.refreshCandidates(it, Random(it.rngSeed xor it.tick)) }
+    fun jobBusinessHire(jobId: JobId, candidateId: String) =
+        mutate { JobBusinessEngine.hireEmployee(it, jobId, candidateId) }
+    fun jobBusinessFire(jobId: JobId, employeeId: String) =
+        mutate { JobBusinessEngine.fireEmployee(it, jobId, employeeId) }
+    fun jobBusinessCollect(jobId: JobId) =
+        mutate { JobBusinessEngine.collectRevenue(it, jobId) }
 }

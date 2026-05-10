@@ -83,6 +83,13 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
     // el composable termina (onFinish / onCancel), volvemos al hub.
     var activeMiniJob by remember { mutableStateOf<JobId?>(null) }
 
+    // Estado local: si != null, mostramos la pantalla de empresa del oficio.
+    var activeBusinessJob by remember { mutableStateOf<JobId?>(null) }
+    activeBusinessJob?.let { job ->
+        JobBusinessScreen(job = job, state = state, vm = vm, onBack = { activeBusinessJob = null })
+        return
+    }
+
     activeMiniJob?.let { job ->
         val onFinish: (Double) -> Unit = { scoreMul ->
             vm.jobsWorkShiftWithScore(job, scoreMul)
@@ -144,10 +151,15 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
         if (!js.accepted) {
             JobsWelcome(state, vm)
         } else {
-            JobsHubView(state, vm) { job ->
-                if (job.miniGameImplemented) activeMiniJob = job
-                else vm.jobsWorkShift(job)
-            }
+            JobsHubView(
+                state = state,
+                vm = vm,
+                onWorkRequested = { job ->
+                    if (job.miniGameImplemented) activeMiniJob = job
+                    else vm.jobsWorkShift(job)
+                },
+                onBusinessRequested = { job -> activeBusinessJob = job }
+            )
         }
     }
 }
@@ -203,7 +215,8 @@ private fun JobsWelcome(state: GameState, vm: GameViewModel) {
 private fun JobsHubView(
     state: GameState,
     vm: GameViewModel,
-    onWorkRequested: (JobId) -> Unit
+    onWorkRequested: (JobId) -> Unit,
+    onBusinessRequested: (JobId) -> Unit
 ) {
     val js = state.jobs
     val player = state.player
@@ -262,7 +275,9 @@ private fun JobsHubView(
                     requiredLevel = job.requiredPlayerLevel,
                     wagePreview = JobsEngine.previewWage(state, job),
                     canWork = state.player.energy >= job.energyCost,
-                    onWork = { onWorkRequested(job) }
+                    hasBusiness = state.jobBusinesses.hasBusinessFor(job),
+                    onWork = { onWorkRequested(job) },
+                    onBusiness = { onBusinessRequested(job) }
                 )
                 Spacer(Modifier.height(6.dp))
             }
@@ -325,7 +340,9 @@ private fun JobCard(
     requiredLevel: Int,
     wagePreview: Double,
     canWork: Boolean,
-    onWork: () -> Unit
+    hasBusiness: Boolean,
+    onWork: () -> Unit,
+    onBusiness: () -> Unit
 ) {
     val border = when {
         !progress.unlocked -> InkBorder
@@ -385,6 +402,18 @@ private fun JobCard(
                     ) {
                         Text("Trabajar 1h", fontSize = 11.sp,
                             color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = onBusiness,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text(
+                            if (hasBusiness) "🏢 Tu empresa" else "🏪 Montar empresa",
+                            fontSize = 10.sp,
+                            color = if (hasBusiness) Emerald else Sapphire,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

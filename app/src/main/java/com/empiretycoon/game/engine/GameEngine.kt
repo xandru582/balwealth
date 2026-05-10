@@ -390,6 +390,16 @@ object GameEngine {
             s2 = JobsEngine.checkUnlocks(s2)
         }
 
+        // 32) Empresas de oficios: tick cada minuto in-game (60 ticks).
+        //     Acumula producción y paga salarios al cambio de día.
+        if (nextTick % 60L == 0L && s2.jobBusinesses.businesses.isNotEmpty()) {
+            s2 = JobBusinessEngine.tickAll(s2)
+        }
+        // Refresh candidatos diario.
+        if (nextTick % 1_440L == 0L && s2.jobBusinesses.businesses.isNotEmpty()) {
+            s2 = JobBusinessEngine.refreshCandidates(s2, rng)
+        }
+
         return s2
     }
 

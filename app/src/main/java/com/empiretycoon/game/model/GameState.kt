@@ -161,7 +161,10 @@ data class GameState(
     val jobs: JobsState = JobsState(),
 
     /** v17 — Árbol de talentos permanente (60 traits, 5 ramas). */
-    val traitTree: TraitTreeState = TraitTreeState()
+    val traitTree: TraitTreeState = TraitTreeState(),
+
+    /** v17 — Empresas de oficios con empleados especializados (Fase C). */
+    val jobBusinesses: JobBusinessesState = JobBusinessesState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()
