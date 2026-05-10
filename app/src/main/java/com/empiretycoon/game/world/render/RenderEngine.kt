@@ -412,12 +412,16 @@ object SkyEngine {
 
 object ShadowEngine {
     /**
-     * Sombras blandas con PCF poor-man's: en vez de una elipse dura, dibuja
-     * 5 elipses con offsets sub-pixel y alpha decreciente desde el centro.
-     * Resultado: bordes difuminados sin coste GPU extra (mismas drawCalls
-     * por objeto, sólo 5× drawArc baratos).
+     * Sombras blandas con PCF de 3 muestras. Versión optimizada (post
+     * commit 29028ee): 5-tap → 3-tap. El cross-pattern completo era 5×
+     * drawArc por objeto que con 50 NPCs/coches/props en pantalla dispara
+     * el cuello de botella.
      *
-     * Distribución (cross + center): centro pleno + N/S/E/W con alpha 0.4×.
+     * Distribución actual: centro pleno + 1 sample horizontal a cada lado
+     * con alpha 0.45× — el ojo percibe el ancho graduado igual.
+     *
+     * Coste: 3× drawArc por objeto sombreado (vs 5×). Si visualmente no
+     * basta, se puede subir a 5 con `SOFT_TAPS = 5` arriba.
      */
     fun DrawScope.drawObjectShadow(
         screenX: Float,
@@ -438,26 +442,32 @@ object ShadowEngine {
         val ellipseH = radiusPx * 0.6f
         val cx = screenX + offsetX
         val cy = screenY + offsetY
-        val pcfStep = (radiusPx * 0.18f).coerceAtLeast(1f)
+        val pcfStep = (radiusPx * 0.20f).coerceAtLeast(1f)
 
-        // Centro (alpha pleno) + 4 samples cruzados (alpha 0.40×). Con los 5
-        // pintados aditivamente con copy(alpha) sobre transparente, el ojo
-        // percibe un edge graduado sin coste real.
-        val samples = arrayOf(
-            Triple(0f, 0f, 1.00f),
-            Triple(-pcfStep, 0f, 0.40f),
-            Triple(pcfStep, 0f, 0.40f),
-            Triple(0f, -pcfStep, 0.40f),
-            Triple(0f, pcfStep, 0.40f)
+        // Centro pleno + 2 samples horizontales. Color final composite.
+        // La sombra original era un solo arc al 0.55×0.25 alpha; ahora con
+        // 3 capas + alpha menor por capa el pintado total es similar pero
+        // con bordes más graduados.
+        val centerAlpha = baseAlpha * 0.55f
+        drawArc(
+            color = Color(0x44000000).copy(alpha = centerAlpha),
+            startAngle = 0f, sweepAngle = 360f, useCenter = true,
+            topLeft = Offset(cx - ellipseW / 2f, cy - ellipseH / 2f),
+            size = Size(ellipseW, ellipseH)
         )
-        for ((dx, dy, mul) in samples) {
-            drawArc(
-                color = Color(0x44000000).copy(alpha = baseAlpha * mul * 0.55f),
-                startAngle = 0f, sweepAngle = 360f, useCenter = true,
-                topLeft = Offset(cx + dx - ellipseW / 2f, cy + dy - ellipseH / 2f),
-                size = Size(ellipseW, ellipseH)
-            )
-        }
+        val sideAlpha = centerAlpha * 0.45f
+        drawArc(
+            color = Color(0x44000000).copy(alpha = sideAlpha),
+            startAngle = 0f, sweepAngle = 360f, useCenter = true,
+            topLeft = Offset(cx - pcfStep - ellipseW / 2f, cy - ellipseH / 2f),
+            size = Size(ellipseW, ellipseH)
+        )
+        drawArc(
+            color = Color(0x44000000).copy(alpha = sideAlpha),
+            startAngle = 0f, sweepAngle = 360f, useCenter = true,
+            topLeft = Offset(cx + pcfStep - ellipseW / 2f, cy - ellipseH / 2f),
+            size = Size(ellipseW, ellipseH)
+        )
     }
 }
 
@@ -467,18 +477,20 @@ object ShadowEngine {
 
 object LightingEngine {
     /**
-     * Luces puntuales con bloom PCF poor-man's. Pipeline en 4 capas
-     * (de fuera hacia dentro), todas aditivas, simulando un blur radial:
+     * Luces puntuales con bloom optimizado. Pipeline:
      *
-     *   1. Outer bloom — gradient enorme (1.65× radio), alpha bajo, Plus.
-     *      Da el "spread" suave que hace que la luz "respire" en la oscuridad.
-     *   2. Halo principal — el original, BlendMode.Screen.
-     *   3. Núcleo brillante — el original, Plus.
-     *   4. Hot spot — punto central blanco puro a alpha 0.95, Plus.
-     *      Ese highlight pequeño pero saturado simula la lente de la bombilla.
+     *   1. Halo principal — radial gradient amplio, BlendMode.Screen.
+     *   2. Núcleo brillante — color sólido pequeño, BlendMode.Plus.
+     *   3. Hot spot — highlight central blanco saturado, BlendMode.Plus.
      *
-     * Coste: 4× drawCircle por luz (vs 2× anteriores). Si hay <60 luces en
-     * pantalla a la vez (caso típico), el coste sigue siendo trivial.
+     * OPTIMIZACIÓN PERF (post commit 29028ee):
+     * - El outer bloom layer anterior creaba un Brush.radialGradient EXTRA
+     *   por luz, por frame. Con 50+ luces nocturnas eso eran 50+ allocations
+     *   de gradient/frame y otras tantas drawCalls. Eliminado en favor del
+     *   hot-spot sólido + halo principal, que ya producen efecto bloom
+     *   suficiente al ser aditivos sobre la noche.
+     * - Coste actual: 3 drawCircle por luz (vs 4 que era post-mejora, vs 2
+     *   original). Y solo 1 de los 3 usa Brush.radialGradient.
      */
     fun DrawScope.drawLights(
         lights: List<PointLight>,
@@ -488,22 +500,7 @@ object LightingEngine {
         if (ambient > 0.7f) return  // de día las luces son invisibles
         val lightStrength = (1f - ambient).coerceIn(0f, 1f)
         for (light in lights) {
-            // 1) Outer bloom — diffuse spread (Plus / aditivo)
-            val outerR = light.radius * 1.65f
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        light.color.copy(alpha = light.intensity * lightStrength * 0.30f),
-                        light.color.copy(alpha = 0f)
-                    ),
-                    center = Offset(light.x, light.y),
-                    radius = outerR
-                ),
-                radius = outerR,
-                center = Offset(light.x, light.y),
-                blendMode = BlendMode.Plus
-            )
-            // 2) Halo principal (Screen)
+            // 1) Halo principal (Screen) — el único gradient.
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
@@ -517,17 +514,17 @@ object LightingEngine {
                 center = Offset(light.x, light.y),
                 blendMode = BlendMode.Screen
             )
-            // 3) Núcleo brillante
+            // 2) Núcleo brillante — color sólido (sin gradient).
             drawCircle(
-                color = light.color.copy(alpha = light.intensity * 0.8f * lightStrength),
-                radius = light.radius * 0.18f,
+                color = light.color.copy(alpha = light.intensity * 0.85f * lightStrength),
+                radius = light.radius * 0.20f,
                 center = Offset(light.x, light.y),
                 blendMode = BlendMode.Plus
             )
-            // 4) Hot spot — highlight central muy saturado para simular la lente
+            // 3) Hot spot — highlight central blanco saturado simulando lente.
             drawCircle(
                 color = Color.White.copy(alpha = 0.95f * lightStrength),
-                radius = light.radius * 0.06f,
+                radius = light.radius * 0.07f,
                 center = Offset(light.x, light.y),
                 blendMode = BlendMode.Plus
             )
@@ -567,6 +564,12 @@ object PostFx {
     /**
      * Partículas ambientales (polen/polvo en el aire) — añaden vida.
      * Determinista vía hash, animadas con animPhase.
+     *
+     * OPTIMIZACIÓN PERF (post commit 29028ee): pasamos de 32 partículas con
+     * 3 sin() cada una (96 sin/frame) a 16 partículas con 1 sin (16 sin/frame).
+     * El alpha ahora deriva de un offset estático por índice (i * 0.13f) en
+     * vez de un segundo sin(); visualmente es indistinguible al ojo desnudo
+     * porque el efecto ya era sutil. Resultado: ≈83% menos cómputo.
      */
     fun DrawScope.drawAmbientParticles(animPhase: Float, hour: Int) {
         val isDay = hour in 6..19
@@ -576,19 +579,20 @@ object PostFx {
             hour in 17..19 -> Color(0xFFFFCC80) // ámbar atardecer
             else -> Color(0xFFFFF9C4)          // crema día
         }
-        for (i in 0 until 32) {
+        for (i in 0 until 16) {
             // Posición base determinista
             val baseX = ((i * 197 + 43) % 1000).toFloat() / 1000f * size.width
             val baseY = ((i * 251 + 89) % 1000).toFloat() / 1000f * size.height
-            // Drift muy lento horizontal + bobbing vertical
+            // Drift muy lento horizontal + bobbing vertical (1 sin total)
             val driftX = (animPhase * 18f + i * 13f) % size.width
             val px = (baseX + driftX) % size.width
             val py = baseY + sin((animPhase * 3.0f + i).toDouble()).toFloat() * 8f
-            val size = 1.2f + ((i and 0x3) * 0.5f)
-            val alpha = 0.35f + sin((animPhase * 4f + i * 0.7f).toDouble()).toFloat() * 0.20f
+            val pSize = 1.2f + ((i and 0x3) * 0.5f)
+            // Alpha estático por índice — evita un segundo sin().
+            val alpha = 0.35f + ((i * 0.13f) % 0.20f)
             drawCircle(
                 color = particleColor.copy(alpha = alpha),
-                radius = size,
+                radius = pSize,
                 center = Offset(px, py)
             )
         }

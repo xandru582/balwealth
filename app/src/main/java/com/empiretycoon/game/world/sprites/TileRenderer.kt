@@ -388,28 +388,20 @@ private fun DrawScope.drawWater(x: Float, y: Float, t: Float, animPhase: Float, 
         size = Size(t, t)
     )
 
-    // NUEVAS bandas onduladas horizontales. 3 capas, cada una desplazándose
-    // en X con frecuencia y velocidad distintas → da sensación de "marea"
-    // suave. Alpha bajo para no saturar.
-    for (i in 0 until 3) {
-        val bandPhase = (animPhase * (0.9f + i * 0.4f) + i * 1.7f + deco * 0.2f).toDouble()
-        val bandY = y + t * (0.30f + i * 0.22f)
-        val xOff = sin(bandPhase).toFloat() * t * 0.18f
-        drawLine(
-            brush = Brush.horizontalGradient(
-                colors = listOf(
-                    Color(0x00FFFFFF),
-                    Color(0x55FFFFFF).copy(alpha = 0.18f),
-                    Color(0x00FFFFFF)
-                ),
-                startX = x - t * 0.2f + xOff,
-                endX = x + t * 1.2f + xOff
-            ),
-            start = Offset(x, bandY),
-            end = Offset(x + t, bandY),
-            strokeWidth = t * 0.06f
-        )
-    }
+    // OPTIMIZACIÓN PERF (post commit 29028ee): tenía 3 wave bands con
+    // Brush.horizontalGradient cada una recreado por tile/frame — con 30+
+    // water tiles visibles eran ~90 allocations de gradient/frame =
+    // garbage collector cada pocos frames. Reducido a 1 banda con color
+    // sólido + alpha modulada por sin (sin gradient = sin alloc).
+    val bandPhase = (animPhase * 1.2f + deco * 0.2f).toDouble()
+    val bandY = y + t * 0.55f
+    val bandAlpha = (sin(bandPhase).toFloat() * 0.5f + 0.5f) * 0.20f
+    drawLine(
+        color = Color(0xFFFFFFFF).copy(alpha = bandAlpha),
+        start = Offset(x, bandY),
+        end = Offset(x + t, bandY),
+        strokeWidth = t * 0.06f
+    )
 
     // Capas de cáusticos / shimmering (existentes, conservadas)
     for (i in 0 until 5) {
