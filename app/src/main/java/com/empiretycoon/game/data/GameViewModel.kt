@@ -563,4 +563,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         mutate { AICompanionEngine.dismiss(it, tipId) }
     fun companionClearAll() =
         mutate { AICompanionEngine.clearAll(it) }
+
+    // ===================== v17 — MultiCity =====================
+    fun multiCityUnlock() = mutate { MultiCityEngine.unlock(it) }
+    fun multiCityOpenRoute(routeId: String) =
+        mutate { MultiCityEngine.openRoute(it, routeId) }
+    fun multiCityCloseRoute(routeId: String) =
+        mutate { MultiCityEngine.closeRoute(it, routeId) }
+    fun multiCityShip(routeId: String, resourceId: String, qty: Int) =
+        mutate { MultiCityEngine.ship(it, routeId, resourceId, qty) }
 }

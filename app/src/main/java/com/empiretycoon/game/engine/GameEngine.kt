@@ -373,6 +373,12 @@ object GameEngine {
         // Sale rápido si no toca todavía.
         s2 = AICompanionEngine.tick(s2)
 
+        // 29) MultiCity: tick diario (drift de mercados, mantenimiento de
+        //     rutas, liquidación de envíos que llegan).
+        if (s2.multiCity.unlocked && nextTick % 1_440L == 0L) {
+            s2 = MultiCityEngine.tickDaily(s2, rng)
+        }
+
         return s2
     }
 

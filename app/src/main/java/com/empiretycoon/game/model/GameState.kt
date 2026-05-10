@@ -146,7 +146,10 @@ data class GameState(
     val heists: HeistState = HeistState(),
 
     /** v17 — Asistente IA (heurísticas locales, no remoto). */
-    val aiCompanion: AICompanionState = AICompanionState()
+    val aiCompanion: AICompanionState = AICompanionState(),
+
+    /** v17 — Comercio internacional con 5 ciudades. */
+    val multiCity: MultiCityState = MultiCityCatalog.freshState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()
