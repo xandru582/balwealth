@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.empiretycoon.game.data.GameViewModel
 import com.empiretycoon.game.engine.RacingEngine
 import com.empiretycoon.game.model.*
@@ -95,9 +97,19 @@ fun RacingScreen(state: GameState, vm: GameViewModel) {
     }
 }
 
+private val racingTabSaver: Saver<MutableState<RacingTab>, Int> = Saver(
+    save = { it.value.ordinal },
+    restore = { idx ->
+        mutableStateOf(RacingTab.entries.getOrElse(idx) { RacingTab.Team })
+    }
+)
+
 @Composable
 private fun rememberSaveableTab(): MutableState<RacingTab> =
-    remember { mutableStateOf(RacingTab.Team) }
+    // FIX P1: usar rememberSaveable con Saver para que el tab activo
+    // sobreviva la rotación. Antes era `remember` plano y se reseteaba
+    // a Team cada vez que el usuario rotaba el dispositivo.
+    rememberSaveable(saver = racingTabSaver) { mutableStateOf(RacingTab.Team) }
 
 // =====================================================================
 //                              MI EQUIPO
@@ -292,6 +304,19 @@ private fun CarStatRow(
     val teamBudget = state.racing.ownedTeam()?.budget ?: 0.0
     val canAfford = teamBudget >= cost
     val maxed = level >= 99
+    // FIX P1: estimación del coste para 10 upgrades consecutivos.
+    // Sumamos los costes incrementales hasta donde llegue el budget.
+    val cost10 = run {
+        var total = 0.0
+        var lvl = level
+        repeat(10) {
+            if (lvl >= 99) return@repeat
+            total += part.baseCost * (1.0 + lvl * 0.05)
+            lvl++
+        }
+        total
+    }
+    val canAfford10 = teamBudget >= cost10
     Row(
         Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -314,9 +339,9 @@ private fun CarStatRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            if (maxed) "MAX" else "Mejora: ${"%,.0f".format(cost)} €",
+            if (maxed) "MAX" else "+1: ${"%,.0f".format(cost)} € · +10: ${"%,.0f".format(cost10)} €",
             color = if (maxed) Gold else if (canAfford) Dim else Ruby,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             modifier = Modifier.weight(1f)
         )
         Button(
@@ -334,7 +359,8 @@ private fun CarStatRow(
         Spacer(Modifier.width(6.dp))
         Button(
             onClick = { vm.racingUpgradeMany(part, 10) },
-            enabled = canAfford && !maxed,
+            // FIX P1: el +10 ahora requiere coste agregado real, no solo el del +1.
+            enabled = canAfford10 && !maxed,
             modifier = Modifier.height(32.dp),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
             colors = ButtonDefaults.buttonColors(

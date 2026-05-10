@@ -405,18 +405,22 @@ object CryptoEngine {
         )
     }
 
+    /** Severance al despedir mineros: 1 día de salario por minero. */
+    private fun minerSeverance(count: Int): Double =
+        count * (MINER_MONTHLY_SALARY / 30.0)
+
     /**
      * +1/-1 sobre el contador de mineros del token. PERF FIX: ya no consulta
      * empleados de la empresa — los mineros son un agregado (Int) y no
      * Employee individuales, así que escala a millones sin romper el motor.
      *  - delta > 0: contrata UN minero nuevo si hay cash (cobra MINER_HIRE_COST).
-     *  - delta < 0: simplemente decrementa el contador (despido sin coste).
+     *  - delta < 0: cobra severance (1 día de salario) por cada minero
+     *    despedido — FIX P1 evita exploit hire-and-fire (antes salía gratis).
      */
     fun assignMiners(state: GameState, symbol: String, delta: Int): GameState {
         if (!state.crypto.unlocked) return state
         val h = state.crypto.holdingOrEmpty(symbol)
         if (delta > 0) {
-            // Cada +1 cuesta MINER_HIRE_COST.
             val canAfford = (state.company.cash / MINER_HIRE_COST).toInt()
             val hireN = delta.coerceAtMost(canAfford)
             if (hireN <= 0) return state
@@ -427,9 +431,17 @@ object CryptoEngine {
                 crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH))
             )
         } else if (delta < 0) {
-            val newCount = (h.minersAssigned + delta).coerceAtLeast(0)
+            val fireN = (-delta).coerceAtMost(h.minersAssigned)
+            if (fireN <= 0) return state
+            val severance = minerSeverance(fireN)
+            val newCount = h.minersAssigned - fireN
             val newH = h.copy(minersAssigned = newCount)
-            return state.copy(crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH)))
+            return state.copy(
+                company = state.company.copy(
+                    cash = (state.company.cash - severance).coerceAtLeast(0.0)
+                ),
+                crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH))
+            )
         }
         return state
     }

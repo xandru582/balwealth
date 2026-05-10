@@ -151,9 +151,11 @@ object JobsEngine {
 
     /** Cálculo de wage modulado por nivel-oficio + stat + nivel jugador. */
     private fun computeWage(job: JobId, jobLevel: Int, statValue: Int, playerLevel: Int): Double {
-        val levelMul = 1.0 + (jobLevel - 1) * 0.05
-        val statMul = 1.0 + statValue.coerceAtLeast(0) * 0.005
-        val playerMul = 1.0 + (playerLevel - 1) * 0.01
+        // FIX P1: caps para evitar explosión de wage con stats inflados por
+        // traits/prestige. Antes con stat 1000 → statMul=6 → wage 6× sin tope.
+        val levelMul = (1.0 + (jobLevel - 1) * 0.05).coerceAtMost(3.45) // cap level 50
+        val statMul = (1.0 + statValue.coerceAtLeast(0) * 0.005).coerceAtMost(2.0) // cap +100%
+        val playerMul = (1.0 + (playerLevel - 1) * 0.01).coerceAtMost(3.0) // cap level 200
         return job.baseHourlyWage * levelMul * statMul * playerMul
     }
 

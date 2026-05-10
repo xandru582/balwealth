@@ -121,12 +121,14 @@ private fun ResourceRow(r: Resource, state: GameState, vm: GameViewModel) {
                 Text("Compra: ${buy.fmtMoney()} · Venta: ${sell.fmtMoney()}",
                     color = Dim, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))
+                // FIX P1: validar fondos antes de habilitar el botón.
+                val cash = state.company.cash
                 Row {
-                    QtyButton("Comprar 1") { vm.buy(r.id, 1) }
+                    QtyButton("Comprar 1", enabled = cash >= buy) { vm.buy(r.id, 1) }
                     Spacer(Modifier.width(6.dp))
-                    QtyButton("x10") { vm.buy(r.id, 10) }
+                    QtyButton("x10", enabled = cash >= buy * 10) { vm.buy(r.id, 10) }
                     Spacer(Modifier.width(6.dp))
-                    QtyButton("x50") { vm.buy(r.id, 50) }
+                    QtyButton("x50", enabled = cash >= buy * 50) { vm.buy(r.id, 50) }
                 }
                 Spacer(Modifier.height(6.dp))
                 Row {
@@ -142,10 +144,14 @@ private fun ResourceRow(r: Resource, state: GameState, vm: GameViewModel) {
 }
 
 @Composable
-private fun QtyButton(label: String, onClick: () -> Unit) {
+private fun QtyButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Sapphire, contentColor = Paper),
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Sapphire, contentColor = Paper,
+            disabledContainerColor = InkBorder, disabledContentColor = Dim
+        ),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
     ) { Text(label, fontSize = 12.sp) }
 }

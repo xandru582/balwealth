@@ -168,6 +168,7 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
 
 @Composable
 private fun JobsWelcome(state: GameState, vm: GameViewModel) {
+    var confirmAccept by remember { mutableStateOf(false) }
     SectionTitle(
         "💼 Bolsa de empleo",
         subtitle = "40 oficios jugables. Trabajas tú directamente, no la empresa."
@@ -200,12 +201,39 @@ private fun JobsWelcome(state: GameState, vm: GameViewModel) {
     Spacer(Modifier.height(16.dp))
 
     Button(
-        onClick = { vm.jobsAccept(); vm.jobsCheckUnlocks() },
+        onClick = { confirmAccept = true },
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(containerColor = Gold)
     ) {
         Text("💼 Abrir la bolsa de empleo",
             fontWeight = FontWeight.Bold, color = Color.Black)
+    }
+
+    if (confirmAccept) {
+        AlertDialog(
+            onDismissRequest = { confirmAccept = false },
+            title = { Text("¿Abrir la bolsa de empleo?") },
+            text = {
+                Text(
+                    "Esta acción es IRREVERSIBLE. Los oficios se " +
+                        "desbloquean automáticamente al subir nivel del " +
+                        "personaje. Es gratis pero no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.jobsAccept(); vm.jobsCheckUnlocks()
+                    confirmAccept = false
+                }) {
+                    Text("Abrir bolsa", color = Gold, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmAccept = false }) {
+                    Text("Cancelar", color = Dim)
+                }
+            }
+        )
     }
 }
 

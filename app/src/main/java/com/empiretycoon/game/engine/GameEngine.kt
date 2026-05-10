@@ -144,6 +144,10 @@ object GameEngine {
             s2 = s2.copy(market = EconomicEngine.applyPhaseToMarket(s2.market, s2.economy.currentPhase, rng))
             s2 = s2.copy(news = EconomicEngine.pruneFeed(s2.news, s2.day + 1))
         }
+        // FIX P1: throttle de generación de noticias económicas. Antes corría
+        // CADA tick (60×/min) generando objetos descartados; ahora solo cada
+        // 30s in-game, suficiente para "1-3 noticias/día" sin quemar CPU.
+        if (nextTick % 30L == 0L)
         EconomicEngine.generateNewsTick(s2.economy, rng, nextTick, s2.day)?.let { item ->
             val (m2, applied) = EconomicEngine.applyNewsToMarket(s2.market, item)
             var newsFeed = s2.news.copy(

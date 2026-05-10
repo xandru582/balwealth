@@ -235,6 +235,34 @@ private fun ActiveLoanCard(loan: ActiveLoan, state: GameState, vm: GameViewModel
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
             ) { Text("Liquidar", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
         }
+        // FIX P1: input de cantidad libre para pagos parciales arbitrarios.
+        var customAmount by remember(loan.id) { mutableStateOf("") }
+        val customN = customAmount.toDoubleOrNull() ?: 0.0
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = customAmount,
+                onValueChange = { customAmount = it.filter { c -> c.isDigit() || c == '.' } },
+                label = { Text("Pago personalizado (€)", fontSize = 11.sp) },
+                singleLine = true,
+                modifier = Modifier.weight(1f).height(56.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Button(
+                onClick = {
+                    vm.repayLoan(loan.id, customN)
+                    customAmount = ""
+                },
+                enabled = !loan.defaulted && customN > 0 && state.company.cash >= customN,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Emerald, contentColor = Ink,
+                    disabledContainerColor = InkBorder, disabledContentColor = Dim
+                ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.height(40.dp)
+            ) { Text("Pagar", fontSize = 12.sp) }
+        }
     }
 }
 

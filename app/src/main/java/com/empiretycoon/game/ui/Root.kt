@@ -495,6 +495,27 @@ private fun SubScreenHost(
                 "jobs" -> JobsScreen(state, vm)
                 "traits" -> TraitTreeScreen(state, vm)
                 "settings" -> MoreScreen(state, vm)
+                else -> {
+                    // FIX P1: fallback explícito si llega un id desconocido.
+                    // Antes era un `when` sin else → pantalla en blanco silenciosa.
+                    Column(
+                        Modifier.fillMaxSize().padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🤔", fontSize = 48.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Pantalla no disponible",
+                            color = Paper, fontWeight = FontWeight.Bold)
+                        Text("ID: $id",
+                            color = Dim, fontSize = 11.sp)
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = Gold)
+                        ) { Text("Volver", color = Ink, fontWeight = FontWeight.Bold) }
+                    }
+                }
             }
         }
     }

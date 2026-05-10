@@ -16,11 +16,21 @@ object BankingEngine {
 
     // ----------------------- Acciones del jugador -----------------------
 
+    /** Tope máximo de préstamos simultáneos para evitar exploit de "10 loans
+     *  → llenar caja → impagar uno por uno". */
+    private const val MAX_ACTIVE_LOANS = 5
+
     fun takeLoan(state: GameState, offerId: String): GameState {
         val loans = state.loans
         val offer = loans.offers.find { it.id == offerId }
             ?: return notify(state, NotificationKind.WARNING, "Oferta no disponible",
                 "La oferta de préstamo ya no existe.")
+
+        // FIX P1: tope de endeudamiento simultáneo.
+        if (loans.active.size >= MAX_ACTIVE_LOANS) {
+            return notify(state, NotificationKind.ERROR, "Demasiados préstamos",
+                "Ya tienes $MAX_ACTIVE_LOANS préstamos activos. Liquida alguno primero.")
+        }
 
         if (state.company.reputation < offer.requiredReputation) {
             return notify(state, NotificationKind.ERROR, "Reputación insuficiente",

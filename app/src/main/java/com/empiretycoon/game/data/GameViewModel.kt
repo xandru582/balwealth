@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -119,13 +118,20 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        // FIX BUG-17-03/04: cancela los loops y espera bloqueante a que el
-        // último save persista. Sin esto, el ViewModel se destruye antes de
-        // terminar y se pierde el progreso reciente.
+        // FIX P1: lanzamos el último save en GlobalScope.IO (NonCancellable)
+        // sin bloquear el hilo principal. Antes `runBlocking(NonCancellable)`
+        // podía dispararar ANR si el save IO tardaba >5s. Si el proceso muere
+        // antes de que el coroutine termine, los autosaves periódicos
+        // (cada 10s) ya cubren el caso del 99%.
         gameLoop?.cancel()
         saveLoop?.cancel()
-        runBlocking(NonCancellable) {
-            safeSave(_state.value.copy(lastRealTimeMs = System.currentTimeMillis()))
+        @Suppress("DEPRECATION_ERROR")
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO + NonCancellable) {
+            try {
+                repo.save(_state.value.copy(lastRealTimeMs = System.currentTimeMillis()))
+            } catch (_: Throwable) {
+                // No podemos hacer más en onCleared — los autosaves de 10s cubren.
+            }
         }
         super.onCleared()
     }

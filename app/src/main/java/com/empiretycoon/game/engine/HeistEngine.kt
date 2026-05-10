@@ -194,8 +194,11 @@ object HeistEngine {
         val gearBonus = (plan.gearSpent / 250_000.0).coerceAtMost(0.30)
         val luckBonus = (state.player.stats.luck - 5) * 0.005
 
-        val score = (teamAvgSkill / 99.0) + approachBonus + gearBonus + luckBonus -
-            (def.baseDifficulty / 100.0)
+        // FIX P1: cap superior del score para evitar PERFECT casi seguro
+        // con crew skill 99 + gear 250k + luck 5. Antes podía llegar a 1.4.
+        // Cap en 0.50 deja PERFECT_chance = 15% + 0.5*20% = 25% como techo.
+        val score = ((teamAvgSkill / 99.0) + approachBonus + gearBonus + luckBonus -
+            (def.baseDifficulty / 100.0)).coerceIn(-0.50, 0.50)
 
         val r = rng.nextDouble()
         val outcome = when {
@@ -213,7 +216,11 @@ object HeistEngine {
         }
 
         val grossLoot = def.baseReward * rewardMul
-        val cutPaid = grossLoot * crew.sumOf { it.cutPct }
+        // FIX P1: cap del % total de cuts a 95% para que SIEMPRE haya algo
+        // de neto para el jugador (antes si crew.cutPct > 1.0 → cutPaid >
+        // grossLoot → net = 0 y crew "se cobraba" más de lo que había).
+        val cutSum = crew.sumOf { it.cutPct }.coerceAtMost(0.95)
+        val cutPaid = grossLoot * cutSum
         val net = max(0.0, grossLoot - cutPaid)
         val gearLoss = if (outcome == HeistOutcome.DISASTER) plan.gearSpent * lossMul else 0.0
         val heatGain = (def.heatBase * heatMul).toInt()

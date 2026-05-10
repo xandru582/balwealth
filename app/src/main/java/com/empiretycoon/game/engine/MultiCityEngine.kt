@@ -213,6 +213,13 @@ object MultiCityEngine {
             return notify(state, NotificationKind.ERROR, "Capacidad excedida",
                 "Cap por envío: ${route.capacityPerShipment} unidades.")
         }
+        // FIX P1: limita envíos concurrentes por ruta a 3 para evitar
+        // exploit de arbitraje cíclico ilimitado entre ciudades.
+        val concurrentOnRoute = mc.shipments.count { it.routeId == routeId }
+        if (concurrentOnRoute >= 3) {
+            return notify(state, NotificationKind.WARNING, "Ruta saturada",
+                "Ya tienes 3 envíos en tránsito por esta ruta. Espera a que lleguen.")
+        }
         val res = ResourceCatalog.tryById(resourceId) ?: return notify(state,
             NotificationKind.ERROR, "Recurso desconocido", "ID: $resourceId.")
         val have = state.inventoryOf(resourceId)
