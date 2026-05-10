@@ -21,6 +21,8 @@ import com.empiretycoon.game.engine.JobsEngine
 import com.empiretycoon.game.model.*
 import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.SectionTitle
+import com.empiretycoon.game.ui.screens.jobs.FirefighterJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
 import com.empiretycoon.game.ui.theme.*
 import com.empiretycoon.game.util.fmtMoney
 
@@ -38,6 +40,25 @@ import com.empiretycoon.game.util.fmtMoney
 @Composable
 fun JobsScreen(state: GameState, vm: GameViewModel) {
     val js = state.jobs
+
+    // Estado local: si != null, mostramos el mini-juego del oficio. Cuando
+    // el composable termina (onFinish / onCancel), volvemos al hub.
+    var activeMiniJob by remember { mutableStateOf<JobId?>(null) }
+
+    activeMiniJob?.let { job ->
+        val onFinish: (Double) -> Unit = { scoreMul ->
+            vm.jobsWorkShiftWithScore(job, scoreMul)
+            activeMiniJob = null
+        }
+        val onCancel: () -> Unit = { activeMiniJob = null }
+        when (job) {
+            JobId.POLICE_OFFICER -> PoliceJobScreen(state, onFinish, onCancel)
+            JobId.FIREFIGHTER -> FirefighterJobScreen(state, onFinish, onCancel)
+            else -> { activeMiniJob = null }  // safety: no debería ocurrir
+        }
+        return
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -47,7 +68,10 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
         if (!js.accepted) {
             JobsWelcome(state, vm)
         } else {
-            JobsHubView(state, vm)
+            JobsHubView(state, vm) { job ->
+                if (job.miniGameImplemented) activeMiniJob = job
+                else vm.jobsWorkShift(job)
+            }
         }
     }
 }
@@ -100,7 +124,11 @@ private fun JobsWelcome(state: GameState, vm: GameViewModel) {
 // ===================== HUB =====================
 
 @Composable
-private fun JobsHubView(state: GameState, vm: GameViewModel) {
+private fun JobsHubView(
+    state: GameState,
+    vm: GameViewModel,
+    onWorkRequested: (JobId) -> Unit
+) {
     val js = state.jobs
     val player = state.player
 
@@ -158,7 +186,7 @@ private fun JobsHubView(state: GameState, vm: GameViewModel) {
                     requiredLevel = job.requiredPlayerLevel,
                     wagePreview = JobsEngine.previewWage(state, job),
                     canWork = state.player.energy >= job.energyCost,
-                    onWork = { vm.jobsWorkShift(job) }
+                    onWork = { onWorkRequested(job) }
                 )
                 Spacer(Modifier.height(6.dp))
             }

@@ -330,9 +330,18 @@ enum class JobId(
         baseHourlyWage = 45.0, requiredPlayerLevel = 7, energyCost = 10, preferredStat = JobStat.CHA
     );
 
-    /** Tag de mini-juego implementado o pendiente — actualizar cuando se programe. */
+    /**
+     * Tag de mini-juego implementado o pendiente — actualizar al añadir
+     * cada uno. Si false, "Trabajar 1h" usa el flujo instantáneo
+     * (JobsEngine.workShift). Si true, JobsScreen lanza el Composable
+     * jugable correspondiente y reporta el resultado vía
+     * JobsEngine.workShiftWithScore.
+     */
     val miniGameImplemented: Boolean
-        get() = false   // Ningún oficio tiene mini-juego en este commit. Se irán añadiendo.
+        get() = when (this) {
+            POLICE_OFFICER, FIREFIGHTER -> true
+            else -> false
+        }
 }
 
 /** Estadística por oficio para el jugador. */

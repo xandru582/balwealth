@@ -172,6 +172,104 @@ object JobsEngine {
         return computeWage(job, cur.level, statValue, state.player.level)
     }
 
+    /**
+     * Variante de [workShift] usada cuando un mini-juego ha terminado.
+     * `scoreMul` es un multiplicador en [0.5, 1.5] derivado del rendimiento:
+     *   - score 0%   → 0.5× wage (te llevas algo por intentarlo).
+     *   - score 50%  → 1.0× wage (rendimiento medio).
+     *   - score 100% → 1.5× wage (clavado).
+     *
+     * Misma validación de unlock + energy + level-up que workShift, pero
+     * sin caps: si haces un score perfecto el wage final puede llegar a
+     * 1.5× del normal.
+     */
+    fun workShiftWithScore(state: GameState, job: JobId, scoreMul: Double): GameState {
+        if (!state.jobs.accepted) {
+            return notify(state, NotificationKind.ERROR, "Sin acceso",
+                "Acepta primero la bolsa de empleo.")
+        }
+        val cur = state.jobs.progressOf(job)
+        if (!cur.unlocked) {
+            return notify(state, NotificationKind.ERROR, "🔒 Oficio bloqueado",
+                "Necesitas nivel ${job.requiredPlayerLevel} (tu nivel: ${state.player.level}).")
+        }
+        if (state.player.energy < job.energyCost) {
+            return notify(state, NotificationKind.WARNING, "Sin energía",
+                "Necesitas ${job.energyCost} ⚡ y tienes ${state.player.energy}.")
+        }
+
+        val statValue = statValueFor(state.player, job.preferredStat)
+        val baseWage = computeWage(job, cur.level, statValue, state.player.level)
+        val safeMul = scoreMul.coerceIn(0.5, 1.5)
+        val wage = baseWage * safeMul
+
+        // XP del oficio escala con score: rinde mejor → más XP.
+        val shiftXp = (SHIFT_BASE_XP * safeMul).toInt().coerceAtLeast(5)
+
+        val newXp = cur.xpInLevel + shiftXp
+        val (finalLevel, finalXp) = if (cur.level < MAX_LEVEL && newXp >= XP_PER_LEVEL) {
+            val gained = newXp / XP_PER_LEVEL
+            val newLevel = min(MAX_LEVEL, cur.level + gained)
+            val carry = if (newLevel >= MAX_LEVEL) 0 else newXp % XP_PER_LEVEL
+            newLevel to carry
+        } else {
+            cur.level to newXp
+        }
+
+        val updatedProgress = cur.copy(
+            level = finalLevel,
+            xpInLevel = finalXp,
+            shiftsWorked = cur.shiftsWorked + 1,
+            totalEarned = cur.totalEarned + wage,
+            lastShiftTick = state.tick
+        )
+
+        val shiftResult = JobShiftResult(
+            jobName = job.name,
+            cashEarned = wage,
+            xpGained = shiftXp,
+            level = finalLevel,
+            day = state.day
+        )
+
+        val newPlayer = state.player
+            .copy(cash = state.player.cash + wage)
+            .withEnergy(-job.energyCost)
+            .addXp(PLAYER_XP_PER_SHIFT)
+
+        val newJobs = state.jobs.copy(
+            progress = state.jobs.progress + (job.name to updatedProgress),
+            totalShifts = state.jobs.totalShifts + 1,
+            totalEarned = state.jobs.totalEarned + wage,
+            recentShifts = (state.jobs.recentShifts + shiftResult).takeLast(20)
+        )
+
+        val perfPct = (safeMul * 100).toInt() - 50
+        val rating = when {
+            safeMul >= 1.40 -> "🌟 Brillante"
+            safeMul >= 1.10 -> "👏 Bien"
+            safeMul >= 0.90 -> "🙂 Aceptable"
+            safeMul >= 0.70 -> "😬 Justo"
+            else -> "💤 Flojo"
+        }
+        val leveledUp = finalLevel > cur.level
+        val title = if (leveledUp)
+            "${job.emoji} ¡Subiste a nivel $finalLevel!"
+        else
+            "${job.emoji} Turno: ${job.displayName} — $rating"
+        val msg = "Has ganado ${"%,.2f".format(wage)} € (${if (perfPct >= 0) "+" else ""}$perfPct% sobre base) " +
+            "+ $shiftXp XP. Energía: -${job.energyCost} ⚡."
+
+        return notify(
+            state.copy(player = newPlayer, jobs = newJobs),
+            if (leveledUp) NotificationKind.SUCCESS
+            else if (safeMul >= 1.10) NotificationKind.SUCCESS
+            else if (safeMul >= 0.90) NotificationKind.INFO
+            else NotificationKind.WARNING,
+            title, msg
+        )
+    }
+
     private fun notify(state: GameState, kind: NotificationKind, title: String, msg: String): GameState {
         val n = GameNotification(
             id = System.nanoTime(),
