@@ -587,4 +587,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun jobsWorkShift(jobId: JobId) = mutate { JobsEngine.workShift(it, jobId) }
     fun jobsWorkShiftWithScore(jobId: JobId, scoreMul: Double) =
         mutate { JobsEngine.workShiftWithScore(it, jobId, scoreMul) }
+
+    // ===================== v17 — TraitTree =====================
+    fun traitTreeUnlock(traitId: String) = mutate { TraitTreeEngine.unlock(it, traitId) }
 }
