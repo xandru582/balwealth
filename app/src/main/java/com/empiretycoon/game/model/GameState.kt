@@ -131,7 +131,31 @@ data class GameState(
     val house: com.empiretycoon.game.world.HouseState = com.empiretycoon.game.world.HouseState(),
 
     /** Formula Manager: equipos, pilotos, calendario, championship. */
-    val racing: RacingState = RacingState()
+    val racing: RacingState = RacingState(),
+
+    /** v17 — Mercado cripto con rugpulls, staking y mining. */
+    val crypto: CryptoMarketState = CryptoCatalog.freshState(),
+
+    /** v17 — Sistema de desastres dinámicos. */
+    val disasters: DisasterState = DisasterState(),
+
+    /** v17 — Retos diarios y semanales rotatorios. */
+    val dailyChallenges: DailyChallengeState = DailyChallengeState(),
+
+    /** v17 — Heists y mini-juego roguelike de atracos. */
+    val heists: HeistState = HeistState(),
+
+    /** v17 — Asistente IA (heurísticas locales, no remoto). */
+    val aiCompanion: AICompanionState = AICompanionState(),
+
+    /** v17 — Comercio internacional con 5 ciudades. */
+    val multiCity: MultiCityState = MultiCityCatalog.freshState(),
+
+    /** v17 — Arcade con mini-juegos jugables y apuestas. */
+    val arcade: ArcadeState = ArcadeState(),
+
+    /** v17 — Temporadas y festivales rotatorios. */
+    val seasons: SeasonsState = SeasonsState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()

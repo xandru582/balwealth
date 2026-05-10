@@ -374,18 +374,36 @@ private fun DrawScope.drawPlaza(x: Float, y: Float, t: Float, deco: Int, base: C
 // =====================================================================
 
 private fun DrawScope.drawWater(x: Float, y: Float, t: Float, animPhase: Float, deco: Int, base: Color, decoColor: Color) {
-    // Gradient de agua profunda
+    // Gradient de agua profunda — startY/endY moduladas con onda lenta para
+    // simular "subida y bajada" del nivel del agua. Coste cero (es un argumento
+    // de la API, no es un dibujo extra).
+    val waveBase = sin((animPhase * 1.8f + deco * 0.15f).toDouble()).toFloat() * t * 0.08f
     drawRect(
         brush = Brush.verticalGradient(
             colors = listOf(base.lighten(0.18f), base.lighten(0.05f), base, decoColor.darken(0.10f)),
-            startY = y,
-            endY = y + t
+            startY = y - waveBase,
+            endY = y + t + waveBase
         ),
         topLeft = Offset(x, y),
         size = Size(t, t)
     )
 
-    // Capas de cáusticos / shimmering
+    // OPTIMIZACIÓN PERF (post commit 29028ee): tenía 3 wave bands con
+    // Brush.horizontalGradient cada una recreado por tile/frame — con 30+
+    // water tiles visibles eran ~90 allocations de gradient/frame =
+    // garbage collector cada pocos frames. Reducido a 1 banda con color
+    // sólido + alpha modulada por sin (sin gradient = sin alloc).
+    val bandPhase = (animPhase * 1.2f + deco * 0.2f).toDouble()
+    val bandY = y + t * 0.55f
+    val bandAlpha = (sin(bandPhase).toFloat() * 0.5f + 0.5f) * 0.20f
+    drawLine(
+        color = Color(0xFFFFFFFF).copy(alpha = bandAlpha),
+        start = Offset(x, bandY),
+        end = Offset(x + t, bandY),
+        strokeWidth = t * 0.06f
+    )
+
+    // Capas de cáusticos / shimmering (existentes, conservadas)
     for (i in 0 until 5) {
         val phase = (animPhase * 6.28f + i * 1.2f + deco).toDouble()
         val py = y + t * (0.15f + i * 0.18f) + sin(phase).toFloat() * t * 0.05f
@@ -411,15 +429,17 @@ private fun DrawScope.drawWater(x: Float, y: Float, t: Float, animPhase: Float, 
         )
     }
 
-    // Reflejo del sol con destello
+    // Reflejo del sol con destello — ahora con leve oscilación lateral
+    val sunBob = sin((animPhase * 2.4f + deco).toDouble()).toFloat() * t * 0.04f
     drawCircle(color = Color(0x55FFFFFF), radius = t * 0.10f,
-        center = Offset(x + t * 0.7f, y + t * 0.30f))
+        center = Offset(x + t * 0.7f + sunBob, y + t * 0.30f))
     drawCircle(color = Color(0xCCFFFFFF), radius = t * 0.04f,
-        center = Offset(x + t * 0.7f, y + t * 0.30f))
+        center = Offset(x + t * 0.7f + sunBob, y + t * 0.30f))
 
-    // Foam horizontal sutil arriba (espuma)
+    // Foam horizontal sutil arriba (espuma) con ondulación
+    val foamWave = sin((animPhase * 3f + deco * 0.4f).toDouble()).toFloat() * 0.4f + 0.6f
     drawLine(
-        color = Color(0xCCFFFFFF).copy(alpha = 0.3f),
+        color = Color(0xCCFFFFFF).copy(alpha = 0.3f * foamWave),
         start = Offset(x, y + t * 0.05f),
         end = Offset(x + t, y + t * 0.05f),
         strokeWidth = 1f

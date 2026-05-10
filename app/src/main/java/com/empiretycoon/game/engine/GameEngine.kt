@@ -338,6 +338,52 @@ object GameEngine {
             }
         }
 
+        // ===================== v17 hooks =====================
+
+        // 24) Crypto: precios cada 10s, day-tick al cambio de día.
+        if (s2.crypto.unlocked) {
+            if (nextTick % 10L == 0L) {
+                s2 = CryptoEngine.tickPrices(s2, rng)
+            }
+            if (nextTick % 1_440L == 0L) {
+                s2 = CryptoEngine.dailyTick(s2, rng)
+            }
+        }
+
+        // 25) Desastres: tick diario.
+        if (nextTick % 1_440L == 0L) {
+            s2 = DisasterEngine.tickDaily(s2, rng)
+        }
+
+        // 26) Retos diarios: refresh + evaluación al cambio de día.
+        if (nextTick % 1_440L == 0L) {
+            s2 = DailyChallengeEngine.tickDaily(s2, rng)
+            s2 = DailyChallengeEngine.evaluateAndAutoClaim(s2)
+        } else if (nextTick % 60L == 0L) {
+            // Re-evaluar cada minuto in-game para que la barra avance en vivo.
+            s2 = DailyChallengeEngine.evaluateAndAutoClaim(s2)
+        }
+
+        // 27) Heists: tick diario (heat decay, refresh pool, gating).
+        if (s2.heists.unlocked && nextTick % 1_440L == 0L) {
+            s2 = HeistEngine.tickDaily(s2, rng)
+        }
+
+        // 28) Asistente IA: re-analiza el estado cada 5 min in-game (interno).
+        // Sale rápido si no toca todavía.
+        s2 = AICompanionEngine.tick(s2)
+
+        // 29) MultiCity: tick diario (drift de mercados, mantenimiento de
+        //     rutas, liquidación de envíos que llegan).
+        if (s2.multiCity.unlocked && nextTick % 1_440L == 0L) {
+            s2 = MultiCityEngine.tickDaily(s2, rng)
+        }
+
+        // 30) Event Seasons: rota la temporada activa al cambio de día.
+        if (nextTick % 1_440L == 0L) {
+            s2 = SeasonsEngine.tickDaily(s2)
+        }
+
         return s2
     }
 
