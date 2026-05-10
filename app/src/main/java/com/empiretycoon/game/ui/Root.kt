@@ -101,6 +101,7 @@ private val SubScreens = listOf(
     SubScreen("multicity", "Imperio global", "🌐", "5 ciudades + rutas + aranceles + envíos internacionales"),
     SubScreen("arcade", "Arcade", "🎮", "Mini-juegos jugables con apuestas: Serpiente jugable, otros próximamente"),
     SubScreen("seasons", "Temporadas", "🎭", "Halloween · Navidad · Año Nuevo · Verano — bonos rotatorios"),
+    SubScreen("jobs", "Bolsa de empleo", "💼", "40 oficios jugables — trabaja para ti, gana cash personal y XP"),
     SubScreen("settings", "Ajustes", "⚙️", "Audio, velocidad, partida")
 )
 
@@ -486,6 +487,7 @@ private fun SubScreenHost(
                 "multicity" -> MultiCityScreen(state, vm)
                 "arcade" -> ArcadeScreen(state, vm)
                 "seasons" -> SeasonsScreen(state, vm)
+                "jobs" -> JobsScreen(state, vm)
                 "settings" -> MoreScreen(state, vm)
             }
         }

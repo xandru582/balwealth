@@ -580,4 +580,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         mutate { ArcadeEngine.placeBet(it, game, bet) }
     fun arcadeFinishPlay(game: ArcadeGameId, bet: Double, score: Int, winnings: Double) =
         mutate { ArcadeEngine.finishPlay(it, game, bet, score, winnings) }
+
+    // ===================== v17 — Jobs =====================
+    fun jobsAccept() = mutate { JobsEngine.accept(it) }
+    fun jobsCheckUnlocks() = mutate { JobsEngine.checkUnlocks(it) }
+    fun jobsWorkShift(jobId: JobId) = mutate { JobsEngine.workShift(it, jobId) }
 }

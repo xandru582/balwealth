@@ -384,6 +384,12 @@ object GameEngine {
             s2 = SeasonsEngine.tickDaily(s2)
         }
 
+        // 31) Jobs: revisa desbloqueos por nivel del jugador (idempotente,
+        //     sale rápido si no hay nuevos). Se ejecuta cada cambio de día.
+        if (nextTick % 1_440L == 0L && s2.jobs.accepted) {
+            s2 = JobsEngine.checkUnlocks(s2)
+        }
+
         return s2
     }
 
