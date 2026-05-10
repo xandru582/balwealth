@@ -344,7 +344,8 @@ enum class JobId(
             BOXER, FISHERMAN, FOOTBALL_PLAYER, STREAMER,
             PAINTER, PHARMACIST, TEACHER, FARMER,
             LIBRARIAN, DENTIST, POSTMAN, ICE_CREAM_SELLER,
-            PARAMEDIC, K9_OFFICER, ACTOR -> true
+            PARAMEDIC, K9_OFFICER, ACTOR,
+            PIZZAIOLO, BARISTA, GARBAGE_COLLECTOR -> true
             else -> false
         }
 }
