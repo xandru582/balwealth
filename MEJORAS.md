@@ -65,17 +65,54 @@ El juego ya era enorme antes de v17 (24 motores, 33 pantallas, 169 archivos Kotl
 - ✅ **TraitTreeEngine**: 60 talentos en 5 ramas, prereq lineal, coste en Resilience XP, UI con tabs por rama. Otros engines pueden leer multiplicadores via `state.traitTree.multiplierFor(type)`.
 - ✅ Tanda inicial de mini-juegos: 🚓 Policía, 🚒 Bombero, 🥖 Panadero, 👨‍🍳 Chef, 🚕 Taxista, 🔧 Mecánico, 💻 Programador, 🦸 Detective, 🥊 Boxeador, 🌊 Pescador, ⚽ Futbolista, 🎮 Streamer, 🎨 Pintor, 💊 Farmacéutico.
 
-### Tanda 9 (commits `f0346e4` → `<actual>`) — Más mini-juegos
-- ✅ 👨‍🏫 **Profesor** (trivia rápida con pool de 15 preguntas)
-- ✅ 🌾 **Granjero** (rhythm de cosecha: SEMBRAR/REGAR/COSECHAR)
-- ✅ 📚 **Bibliotecario** (clasifica libros entre 4 estantes por género)
-- ✅ 🦷 **Dentista** (limpia caries en boca de 8 muelas antes de que se pudran)
-- ✅ 📮 **Cartero** (find-the-mailbox en grid 4×3 con calles consecutivas)
-- ✅ 🍦 **Heladero** (timing perfect del cucurucho con barra 0-100%)
+### Tanda 9 (commits `f0346e4` → `f2ab657`) — Más mini-juegos (20/40)
+- ✅ 👨‍🏫 Profesor (trivia con 15 preguntas)
+- ✅ 🌾 Granjero (rhythm SEMBRAR/REGAR/COSECHAR)
+- ✅ 📚 Bibliotecario (clasifica libros por género)
+- ✅ 🦷 Dentista (limpia caries en 8 muelas)
+- ✅ 📮 Cartero (find-the-mailbox grid 4×3)
+- ✅ 🍦 Heladero (timing del cucurucho)
 
-**Estado total: 20/40 mini-juegos jugables.**
+### Tanda 10 (commits `7fb7b64` → `9721b6f`) — Roadmap completo (40/40 ✨)
 
-🚧 **20 mini-juegos pendientes**: Paramédico, K-9, Médico, Actor, Pizzero, Barista, Albañil, Carpintero, Electricista, Fontanero, Camionero, Piloto avión, Maquinista, Piloto carreras, Basurero, Jardinero, Veterinario, Diseñador UI, Director cine, Ilusionista.
+**Bloque B-12** (`7fb7b64`):
+- ✅ 🚑 Paramédico (QTE secuencia RCP)
+- ✅ 🦮 K-9 Officer (rhythm órdenes 4 comandos)
+- ✅ 🎭 Actor (secuencia 3 emociones)
+
+**Bloque B-13** (`3657f90`):
+- ✅ 🍕 Pizzero (timing-bar masa, 5 pizzas)
+- ✅ ☕ Barista (4 patrones latte art con tap orden)
+- ✅ 🚛 Basurero (vacía 6 contenedores antes del 100%)
+
+**Bloque B-14** (`c961e34`):
+- ✅ 🔨 Albañil (pared 5×6 columnas)
+- ✅ 🪚 Carpintero (sierra rotativa, cortes ±5%/±10%)
+- ✅ 🚿 Fontanero (3 herramientas vs 3 tamaños fuga)
+
+**Bloque B-15** (`a324506`):
+- ✅ ⚡ Electricista (panel 6 fusibles parpadeantes)
+- ✅ 📱 Diseñador UI (find-misalignment 2×2)
+- ✅ 🎬 Director cine (secuencia 3 acciones de rodaje)
+
+**Bloque B-16** (`27b2de8`):
+- ✅ 🚚 Camionero (parking inverso con frenado preciso)
+- ✅ ✈️ Piloto avión (ajustar ángulo ±5° al objetivo)
+- ✅ 🚂 Maquinista (frenado en zona andén 80-92%)
+
+**Bloque B-17** (`9721b6f`):
+- ✅ 🏎️ Piloto carreras (drift en 6 tipos de curva)
+- ✅ 🌳 Jardinero (herramienta + estado planta correcto)
+- ✅ 🐶 Veterinario (síntoma → diagnóstico)
+- ✅ 🧙 Ilusionista (secuencia 5 cartas de palos)
+- ✅ 👨‍⚕️ Médico (precision-tap puntos paciente, evita falsos)
+
+**Estado total: 40/40 mini-juegos jugables ✨**
+
+Cada uno con mecánica reconocible (tap-reaction, timing-bar, rhythm,
+find-the-thing, sequence, sort, precision-tap, pickup-dropoff, etc.) y
+score teórico calibrado para que `scoreMul` ∈ [0.5, 1.5] sea alcanzable
+con esfuerzo razonable.
 
 ---
 
@@ -83,18 +120,13 @@ El juego ya era enorme antes de v17 (24 motores, 33 pantallas, 169 archivos Kotl
 
 **Objetivo grande**: 40 oficios jugables donde el jugador controla a su personaje haciendo el trabajo (no la empresa). Cada uno con su mini-juego + posibilidad de montar empresa de ese oficio.
 
-**Estado actual: 20/40 implementados** (ver Tandas 8 y 9 arriba). Para los 20 restantes bastará con:
-- Crear su archivo `ui/screens/jobs/{Job}JobScreen.kt` siguiendo el patrón de los ya hechos.
-- Activar el `JobId` en `Jobs.miniGameImplemented` + `JobsScreen.when`.
-- Reciclar mecánicas existentes con datos/tema distintos:
-  - **Tap-reaction** (Police, Football) → reusar para Paramédico (QTE), Director (timing tomas).
-  - **Timing-bar** (Baker, IceCream) → reusar para Pizzero, Barista.
-  - **Rhythm direccional** (Boxer, Farmer) → reusar para Actor.
-  - **Find-the-thing** (Detective, Postman) → reusar para Veterinario.
-  - **Sort/clasifica** (Bibliotecario) → reusar para Diseñador UI.
-  - **Tap-grid** (Firefighter, Dentist) → reusar para Basurero, Jardinero.
-  - **Pickup-dropoff** (Taxi) → reusar para Camionero, Maquinista.
-  - **Trivia** (Teacher) → reusar con preguntas técnicas para Médico, K-9.
+**Estado actual: 40/40 IMPLEMENTADOS ✨** — todos los oficios catalogados en Jobs.kt tienen su mini-juego jugable con UI propia.
+
+**Próximos pasos (post-roadmap)**:
+- 🟡 **Empresas de oficios (Fase C)** — montar tu propia panadería / taller / consultorio con empleados especializados que producen offline. Integración con HrEngine.
+- 🟡 **Wirear los multiplicadores de TraitTree** dentro de los engines existentes (JobsEngine wage, EconomicEngine cash, ProductionEngine speed, etc.). El catálogo de 60 traits ya emite los multiplicadores via `state.traitTree.multiplierFor(type)` — solo falta que cada engine los lea.
+- 🟡 **Etiquetas sobre los edificios de la empresa** en el mundo 2D (asignar building↔CityPlace slot).
+- 🟡 **HostileTakeoverEngine** — adquisiciones agresivas de rivales (51% de acciones).
 
 ### 📋 Plan de implementación incremental
 
