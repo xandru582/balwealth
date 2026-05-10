@@ -56,7 +56,11 @@ object CityPropsGenerator {
             val tx = x.toInt(); val ty = y.toInt()
             if (!grid.inBounds(tx, ty)) return
             val type = grid.tileAt(tx, ty)
-            // Algunas decoraciones (faroles) aparecen en aceras; árboles en césped
+            // FIX (queja usuario): "objetos colocados sin lógica". El else
+            // genérico de la versión anterior solo bloqueaba WATER/WALL, así
+            // que CAFE_TABLE / BENCH / TRASH_CAN / MARKET_STALL_* / PLANTER
+            // podían acabar sobre césped/arena/road. Ahora cada PropKind tiene
+            // su lista blanca explícita y nunca cae en road.
             when (kind) {
                 PropKind.LAMP_POST,
                 PropKind.HYDRANT,
@@ -64,18 +68,26 @@ object CityPropsGenerator {
                 PropKind.PARKED_CAR_RED, PropKind.PARKED_CAR_BLUE,
                 PropKind.NEWSPAPER_KIOSK,
                 PropKind.BUS_STOP_SHELTER,
-                PropKind.STREET_SIGN -> {
+                PropKind.STREET_SIGN,
+                PropKind.BENCH,
+                PropKind.TRASH_CAN,
+                PropKind.PLANTER,
+                PropKind.CAFE_TABLE,
+                PropKind.MARKET_STALL_RED, PropKind.MARKET_STALL_BLUE -> {
+                    // Decoración urbana: solo en aceras o plazas.
                     if (type != TileType.SIDEWALK && type != TileType.PLAZA_TILE) return
                 }
                 PropKind.TREE_OAK, PropKind.TREE_PINE, PropKind.TREE_PALM, PropKind.TREE_BIRCH, PropKind.TREE_AUTUMN,
                 PropKind.BUSH, PropKind.FLOWER_BED -> {
+                    // Vegetación: solo en superficies verdes/forestales/arena.
                     if (type != TileType.GRASS && type != TileType.FOREST_FLOOR && type != TileType.SAND) return
                 }
                 PropKind.FOUNTAIN -> {
                     if (type != TileType.PLAZA_TILE && type != TileType.GRASS) return
                 }
-                else -> {
-                    if (type == TileType.WATER || type == TileType.WALL) return
+                PropKind.CHIMNEY_SMOKE -> {
+                    // El humo solo tiene sentido sobre estructuras / aceras industriales.
+                    if (type != TileType.WALL && type != TileType.SIDEWALK) return
                 }
             }
             list.add(WorldProp(id = "prop_${counter++}", kind = kind.name, x = x, y = y))

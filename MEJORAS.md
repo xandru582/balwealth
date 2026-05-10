@@ -57,11 +57,39 @@ El juego ya era enorme antes de v17 (24 motores, 33 pantallas, 169 archivos Kotl
 - ✅ **ArcadeEngine** — modelo + engine + UI hub + 🐍 Snake completamente jugable. 4 más como stub "próximamente" (1315 LOC totales)
 - ✅ **SeasonsEngine** — ciclo 30 días con 4 temporadas + temporada baja, modificadores globales, recompensas únicas
 
+### Tanda 7 (commits `aa009c4`, `932d1f0`) — Jobs framework + map polish
+- ✅ **Jobs framework**: 40 oficios catalogados, JobsState, JobsEngine (workShift instantáneo + workShiftWithScore para mini-juegos), JobsScreen con hub colapsable por categoría.
+- ✅ **Map fixes**: tráfico restringido a tiles ROAD + despawn de off-road, prop placement con allow-list explícita por PropKind, 5 easter eggs nuevos (estatua que susurra, helado cósmico, OVNI de día, mensaje en botella, reloj a las 3:14).
+
+### Tanda 8 (commits `d724382`–`3dc4153`, `ecca259`–`17f2d6a`) — Mini-juegos + TraitTree
+- ✅ **TraitTreeEngine**: 60 talentos en 5 ramas, prereq lineal, coste en Resilience XP, UI con tabs por rama. Otros engines pueden leer multiplicadores via `state.traitTree.multiplierFor(type)`.
+- ✅ **14 mini-juegos jugables** (de 40 totales):
+    - 🚓 Policía (tap-reaction sospechosos)
+    - 🚒 Bombero (apagar fuegos en grid 4×4)
+    - 🥖 Panadero (timing del horno con barra de tueste)
+    - 👨‍🍳 Chef (cola de tickets con receta)
+    - 🚕 Taxista (pickup + dropoff en grid 6×4)
+    - 🔧 Mecánico (identifica pieza averiada)
+    - 💻 Programador (encuentra el bug)
+    - 🦸 Detective (find-the-clue en grid 5×5)
+    - 🥊 Boxeador (esquiva direccional rítmica)
+    - 🌊 Pescador (agotando peces)
+    - ⚽ Futbolista (penaltis vs portero)
+    - 🎮 Streamer (secuencia de colores)
+    - 🎨 Pintor (traza puntos en orden)
+    - 💊 Farmacéutico (combina viales sin orden)
+- 🚧 **26 mini-juegos pendientes** (siguientes tandas): Paramédico, K-9, Médico, Dentista, Profesor, Bibliotecario, Actor, Pizzero, Barista, Heladero, Albañil, Carpintero, Electricista, Fontanero, Camionero, Piloto avión, Maquinista, Piloto carreras, Cartero, Basurero, Jardinero, Veterinario, Granjero, Diseñador UI, Director cine, Ilusionista.
+
 ---
 
-## 🚧 PRÓXIMA TANDA: Sistema de Oficios
+## 🚧 PRÓXIMA TANDA: completar oficios + empresas
 
 **Objetivo grande**: 40 oficios jugables donde el jugador controla a su personaje haciendo el trabajo (no la empresa). Cada uno con su mini-juego + posibilidad de montar empresa de ese oficio.
+
+**Estado actual: 14/40 implementados** (ver Tanda 8 arriba). Para los 26 restantes bastará con:
+- Crear su archivo `ui/screens/jobs/{Job}JobScreen.kt` siguiendo el patrón de los ya hechos.
+- Activar el `JobId` en `Jobs.miniGameImplemented` + `JobsScreen.when`.
+- Idealmente reciclar mecánicas existentes (rhythm, tap-secuencia, find-the-thing, timing-bar) con datos distintos para acelerar el ritmo.
 
 ### 📋 Plan de implementación incremental
 

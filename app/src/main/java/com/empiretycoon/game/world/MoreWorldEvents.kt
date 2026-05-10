@@ -202,7 +202,84 @@ object MoreEventsCatalog {
                 WorldEventChoice("Ofrecerle un trabajo", cashDelta = -2_000.0, karmaDelta = +10, reputationDelta = +5, happinessDelta = +10, resultMessage = "Le das una oportunidad."),
                 WorldEventChoice("Darle 200 €", cashDelta = -200.0, karmaDelta = +3, resultMessage = "Una ayuda momentánea."),
                 WorldEventChoice("Fingir no reconocerle", karmaDelta = -8, happinessDelta = -10, resultMessage = "Te sientes una basura.")
-            ))
+            )),
+
+        // ============================================================
+        // Easter eggs — eventos curiosos / raros con sabor especial.
+        // (5 nuevos para v17, en respuesta a queja del usuario sobre
+        //  "el mapa es soso y no tiene curiosidades").
+        // ============================================================
+        WorldEvent(
+            "we_ee_silent_statue",
+            "🗿 La estatua que susurra",
+            "Te paras frente a una estatua sin nombre, cubierta de musgo. Juras escuchar tu propio nombre en el viento.",
+            "🗿",
+            listOf(
+                WorldEventChoice("Cerrar los ojos y escuchar",
+                    energyDelta = -3, happinessDelta = +4, xpDelta = 80,
+                    karmaDelta = +1,
+                    resultMessage = "Una calma extraña te llena. Has aprendido algo que no sabes nombrar."),
+                WorldEventChoice("Sacarle una foto",
+                    happinessDelta = +2,
+                    resultMessage = "Al revisar la foto luego, la estatua mira a otro lado.")
+            )
+        ),
+        WorldEvent(
+            "we_ee_cosmic_ice_cream",
+            "🍦 Heladero del cosmos",
+            "Un puesto de helados sin marca. El sabor del día: 'Fresa cósmica'. Pide 18 €.",
+            "🍦",
+            listOf(
+                WorldEventChoice("Probar (18 €)",
+                    cashDelta = -18.0, energyDelta = +12, happinessDelta = +9,
+                    xpDelta = 25,
+                    resultMessage = "Sabe a fresa, sí, pero también a un verano muy lejano. Tu suerte sube hoy."),
+                WorldEventChoice("Mejor otro día",
+                    resultMessage = "Cuando vuelves a mirar, el puesto ya no está.")
+            )
+        ),
+        WorldEvent(
+            "we_ee_daylight_ufo",
+            "🛸 OVNI a plena luz del día",
+            "Algo grande y plateado cruza el cielo y se queda quieto sobre ti dos segundos. Luego, se va.",
+            "🛸",
+            listOf(
+                WorldEventChoice("Sacar el móvil",
+                    happinessDelta = +3, xpDelta = 100, karmaDelta = +1,
+                    resultMessage = "La foto sale movida pero suficiente. Te pasas la tarde investigando."),
+                WorldEventChoice("Ignorarlo y seguir",
+                    happinessDelta = -1,
+                    resultMessage = "Más tarde dudarás si lo soñaste.")
+            )
+        ),
+        WorldEvent(
+            "we_ee_message_in_a_bottle",
+            "🍾 Mensaje en una botella",
+            "En la arena hay una botella tapada con corcho. Dentro, un papel doblado.",
+            "🍾",
+            listOf(
+                WorldEventChoice("Abrirla y leer",
+                    happinessDelta = +5, xpDelta = 40, karmaDelta = +2,
+                    resultMessage = "Es la receta del pan de la abuela de alguien. La guardas con cariño."),
+                WorldEventChoice("Devolverla al mar",
+                    karmaDelta = +3,
+                    resultMessage = "Que siga su viaje. Te quedas mirando hasta que desaparece.")
+            )
+        ),
+        WorldEvent(
+            "we_ee_clock_stuck_at_314",
+            "⏰ El reloj parado a las 3:14",
+            "Un reloj de pared en una esquina marca exactamente las 3:14. Pero no funciona, no tiene baterías. ¿Cómo?",
+            "⏰",
+            listOf(
+                WorldEventChoice("Investigar el mecanismo",
+                    energyDelta = -4, xpDelta = 120, happinessDelta = +2,
+                    resultMessage = "Encuentras un π escondido detrás del cristal. Lecciones de electrónica."),
+                WorldEventChoice("Sonreír y seguir",
+                    happinessDelta = +3,
+                    resultMessage = "Algunos misterios saben mejor sin resolver.")
+            )
+        )
     )
 
     /** Combinado total con los originales. */
