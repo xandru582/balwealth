@@ -527,6 +527,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun cryptoAssignMiners(symbol: String, delta: Int) =
         mutate { CryptoEngine.assignMiners(it, symbol, delta) }
     fun cryptoClaimMining(symbol: String) = mutate { CryptoEngine.claimMining(it, symbol) }
+    fun cryptoHireMiners(symbol: String, count: Int) =
+        mutate { CryptoEngine.hireMiners(it, symbol, count) }
+    fun cryptoHireMaxMiners(symbol: String) =
+        mutate { CryptoEngine.hireMaxMiners(it, symbol) }
 
     // ===================== v17 — Desastres =====================
     fun disasterToggleInsurance(on: Boolean) =
