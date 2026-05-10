@@ -41,8 +41,49 @@ enum class PlaceKind {
     APARTMENT,
     FACTORY_SLOT,
     FARM_SLOT,
-    MINE_SLOT
+    MINE_SLOT,
+
+    // Landmarks v17 — lugares emblemáticos del mapa con icono propio.
+    STATUE_MYSTERIOUS,
+    BEACHED_UFO,
+    ICE_CREAM_VAN
 }
+
+/** Emoji asociado a cada PlaceKind para overlays/cartelitos del mapa. */
+val PlaceKind.emoji: String
+    get() = when (this) {
+        PlaceKind.CITY_HALL -> "🏛️"
+        PlaceKind.BANK -> "🏦"
+        PlaceKind.STOCK_EXCHANGE -> "📈"
+        PlaceKind.MARKET -> "🏪"
+        PlaceKind.TAVERN -> "🍻"
+        PlaceKind.NEWSPAPER -> "📰"
+        PlaceKind.PARK_FOUNTAIN -> "⛲"
+        PlaceKind.BUS_STOP -> "🚏"
+        PlaceKind.GYM -> "💪"
+        PlaceKind.UNIVERSITY -> "🎓"
+        PlaceKind.HOSPITAL -> "🏥"
+        PlaceKind.POLICE -> "🚓"
+        PlaceKind.COURT -> "⚖️"
+        PlaceKind.MUSEUM -> "🏛️"
+        PlaceKind.CASINO -> "🎰"
+        PlaceKind.NIGHTCLUB -> "🪩"
+        PlaceKind.BLACK_MARKET_DOOR -> "🚪"
+        PlaceKind.MANSION -> "🏰"
+        PlaceKind.APARTMENT -> "🏢"
+        PlaceKind.FACTORY_SLOT -> "🏭"
+        PlaceKind.FARM_SLOT -> "🌾"
+        PlaceKind.MINE_SLOT -> "⛏️"
+        PlaceKind.STATUE_MYSTERIOUS -> "🗿"
+        PlaceKind.BEACHED_UFO -> "🛸"
+        PlaceKind.ICE_CREAM_VAN -> "🍦"
+    }
+
+/** True si este PlaceKind es un landmark emblemático que debe pintarse con un sprite custom. */
+val PlaceKind.isLandmark: Boolean
+    get() = this == PlaceKind.STATUE_MYSTERIOUS ||
+        this == PlaceKind.BEACHED_UFO ||
+        this == PlaceKind.ICE_CREAM_VAN
 
 /**
  * Punto de interés concreto sobre el [WorldGrid]. Sirve a la vez como
@@ -135,7 +176,12 @@ object CityBlueprint {
         CityPlace("p_park_bus",      "Parada del Parque",    District.PARK,        16, 12, PlaceKind.BUS_STOP),
         CityPlace("p_farm_1",        "Solar agrícola A",     District.SUBURB,      12, 4,  PlaceKind.FARM_SLOT),
         CityPlace("p_farm_2",        "Solar agrícola B",     District.SUBURB,      80, 6,  PlaceKind.FARM_SLOT),
-        CityPlace("p_farm_3",        "Solar agrícola C",     District.SUBURB,      80, 14, PlaceKind.FARM_SLOT)
+        CityPlace("p_farm_3",        "Solar agrícola C",     District.SUBURB,      80, 14, PlaceKind.FARM_SLOT),
+
+        // ---- Landmarks v17 (curiosidades del mapa) ----
+        CityPlace("p_statue",        "Estatua misteriosa",   District.PARK,        38, 6,  PlaceKind.STATUE_MYSTERIOUS),
+        CityPlace("p_ufo_beached",   "OVNI varado",          District.HARBOR,      18, 90, PlaceKind.BEACHED_UFO),
+        CityPlace("p_ice_cream_van", "Heladero del cosmos",  District.COMMERCIAL,  36, 58, PlaceKind.ICE_CREAM_VAN)
     )
 
     /**

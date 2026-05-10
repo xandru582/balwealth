@@ -1,14 +1,23 @@
 package com.empiretycoon.game.world.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -31,6 +40,7 @@ import com.empiretycoon.game.world.NpcWorldEngine
 import com.empiretycoon.game.world.WorldGrid
 import com.empiretycoon.game.world.WorldState
 import com.empiretycoon.game.world.WorldEventCatalog
+import com.empiretycoon.game.world.render.drawPlaceLabels
 import com.empiretycoon.game.world.sprites.drawAvatar
 import com.empiretycoon.game.world.sprites.drawNpc
 import com.empiretycoon.game.world.sprites.drawPlayerCar
@@ -57,6 +67,19 @@ fun WorldScreen(state: GameState, vm: GameViewModel, onNavigateTo: (String) -> U
     var camera by remember { mutableStateOf(Camera(state.world.avatar.x, state.world.avatar.y, zoom = 2.4f)) }
     var animPhase by remember { mutableStateOf(0f) }
     var dialog by remember { mutableStateOf<DialogPayload?>(null) }
+
+    // Banner "Entrando a X" cuando el avatar cambia de distrito.
+    var bannerDistrict by remember { mutableStateOf<String?>(null) }
+    var lastSeenDistrict by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.world.currentDistrict) {
+        val now = state.world.currentDistrict
+        if (lastSeenDistrict != null && lastSeenDistrict != now) {
+            bannerDistrict = now
+            delay(2_200L)
+            bannerDistrict = null
+        }
+        lastSeenDistrict = now
+    }
 
     // Loop de animación: avanza movimiento + cámara + animPhase a cada frame
     LaunchedEffect(Unit) {
@@ -292,6 +315,50 @@ fun WorldScreen(state: GameState, vm: GameViewModel, onNavigateTo: (String) -> U
 
             // === CAPA 8: VIGNETTE cinemático ===
             with(com.empiretycoon.game.world.render.PostFx) { drawVignette(strength = 0.50f) }
+
+            // === CAPA 9: ETIQUETAS DE LUGARES (encima de TODO para legibilidad) ===
+            // Dibujadas al final para que no las afecten luces/atmósfera/clima.
+            drawPlaceLabels(
+                originTileX = originTileX,
+                originTileY = originTileY,
+                tileSize = tileSize,
+                viewW = viewW,
+                viewH = viewH,
+                densityScale = density.density
+            )
+        }
+
+        // BANNER de distrito (centrado arriba, animado, no bloquea clicks).
+        AnimatedVisibility(
+            visible = bannerDistrict != null,
+            enter = slideInVertically(animationSpec = tween(380)) { -it } + fadeIn(tween(280)),
+            exit = slideOutVertically(animationSpec = tween(280)) { -it } + fadeOut(tween(220)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 60.dp)
+        ) {
+            bannerDistrict?.let { d ->
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xCC0F1724))
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "Entrando en",
+                            color = Color(0xFFB0BEC5),
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            d.uppercase(),
+                            color = Color(0xFFFFD166),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 22.sp
+                        )
+                    }
+                }
+            }
         }
 
         // HUD: distrito + hora arriba
