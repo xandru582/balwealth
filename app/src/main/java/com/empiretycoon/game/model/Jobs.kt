@@ -339,7 +339,7 @@ enum class JobId(
      */
     val miniGameImplemented: Boolean
         get() = when (this) {
-            POLICE_OFFICER, FIREFIGHTER -> true
+            POLICE_OFFICER, FIREFIGHTER, BAKER, CHEF -> true
             else -> false
         }
 }
