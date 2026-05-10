@@ -118,10 +118,26 @@ object TrafficEngine {
     }
 
     fun tick(state: TrafficState, grid: WorldGrid, deltaSec: Float): TrafficState {
-        val updated = state.vehicles.map { v ->
+        // FIX (queja usuario): coches por agua / acera. El bug original
+        // aplicaba la nueva posición ANTES de comprobar el tile, así que un
+        // coche que salía de la carretera SE METÍA un tile en agua / acera y
+        // luego "giraba" estando ya fuera. Resultado: coches deambulando por
+        // sitios imposibles. Ahora:
+        //   1. Si el coche ya está OFF-ROAD (estado heredado de saves o spawn
+        //      malo), lo despawn-eamos: ensurePopulated lo respawn-eará en
+        //      una carretera válida.
+        //   2. Si la siguiente posición NO es carretera, NO movemos. Solo
+        //      cambiamos la dirección probando primero un giro 90° hacia la
+        //      perpendicular cuyo tile sí es road; si ninguna sirve, damos
+        //      la vuelta. El próximo tick ya intentará avanzar.
+        //   3. Solo si la siguiente posición ES carretera aplicamos wx/wy.
+        val updated = state.vehicles.mapNotNull { v ->
+            // 1) drop si actualmente off-road
+            val curTile = grid.tileAt(v.x.toInt(), v.y.toInt())
+            if (!isRoadTile(curTile)) return@mapNotNull null
+
             val nx = v.x + v.dx * v.speed * deltaSec
             val ny = v.y + v.dy * v.speed * deltaSec
-            // Si va a salir del mapa, wrap
             val wx = when {
                 nx < 0 -> grid.width.toFloat() - 1f
                 nx >= grid.width -> 0f
@@ -132,20 +148,32 @@ object TrafficEngine {
                 ny >= grid.height -> 0f
                 else -> ny
             }
-            // Si la siguiente baldosa NO es carretera, gira 90º
-            val nextTileX = wx.toInt()
-            val nextTileY = wy.toInt()
-            val nextTile = grid.tileAt(nextTileX, nextTileY)
-            val onRoad = nextTile == TileType.ROAD || nextTile == TileType.ROAD_LINE_H || nextTile == TileType.ROAD_LINE_V
-            val (newDx, newDy) = if (!onRoad) {
-                // Girar: cambiar dirección
-                if (v.onRoadVertical) (if (v.x.toInt() % 2 == 0) 1f else -1f) to 0f
-                else 0f to (if (v.y.toInt() % 2 == 0) 1f else -1f)
-            } else v.dx to v.dy
-            v.copy(x = wx, y = wy, dx = newDx, dy = newDy)
+            val nextTile = grid.tileAt(wx.toInt(), wy.toInt())
+            if (isRoadTile(nextTile)) {
+                v.copy(x = wx, y = wy)  // mover; dirección sin cambios
+            } else {
+                // No mover. Buscar perpendicular válida.
+                val movingHorizontal = v.dx != 0f
+                val perp1Dx = if (movingHorizontal) 0f else 1f
+                val perp1Dy = if (movingHorizontal) 1f else 0f
+                val perp2Dx = -perp1Dx
+                val perp2Dy = -perp1Dy
+                val cx = v.x.toInt(); val cy = v.y.toInt()
+                val perp1Tile = grid.tileAt(cx + perp1Dx.toInt(), cy + perp1Dy.toInt())
+                val perp2Tile = grid.tileAt(cx + perp2Dx.toInt(), cy + perp2Dy.toInt())
+                val (newDx, newDy) = when {
+                    isRoadTile(perp1Tile) -> perp1Dx to perp1Dy
+                    isRoadTile(perp2Tile) -> perp2Dx to perp2Dy
+                    else -> -v.dx to -v.dy  // U-turn
+                }
+                v.copy(dx = newDx, dy = newDy, onRoadVertical = newDx == 0f)
+            }
         }
         return state.copy(vehicles = updated)
     }
+
+    private fun isRoadTile(t: TileType): Boolean =
+        t == TileType.ROAD || t == TileType.ROAD_LINE_H || t == TileType.ROAD_LINE_V
 }
 
 // =====================================================================
