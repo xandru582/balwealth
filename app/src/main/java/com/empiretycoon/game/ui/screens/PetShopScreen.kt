@@ -74,10 +74,14 @@ fun PetShopScreen(state: GameState, vm: GameViewModel) {
                         }
                     }
                     Spacer(Modifier.height(4.dp))
+                    // FIX P2: validar fondos antes de habilitar el botón.
                     Button(
                         onClick = { vm.feedActivePet() },
-                        enabled = state.pets.activePetId != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = Sapphire, contentColor = Paper)
+                        enabled = state.pets.activePetId != null && state.player.cash >= 5.0,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Sapphire, contentColor = Paper,
+                            disabledContainerColor = InkBorder, disabledContentColor = Dim
+                        )
                     ) { Text("🍖 Alimentar mascota activa (5 €)") }
                 }
             }

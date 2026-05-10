@@ -1,4 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App identity -->
     <string name="app_name">BalWealth</string>
+
+    <!-- ============== Common UI ============== -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_confirm">Confirmar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_buy">Comprar</string>
+    <string name="action_sell">Vender</string>
+    <string name="action_upgrade">Mejorar</string>
+    <string name="action_hire">Contratar</string>
+    <string name="action_fire">Despedir</string>
+    <string name="action_pay">Pagar</string>
+    <string name="action_claim">Cobrar</string>
+    <string name="action_accept">Aceptar</string>
+    <string name="action_reject">Rechazar</string>
+
+    <!-- ============== Navigation ============== -->
+    <string name="tab_home">Inicio</string>
+    <string name="tab_empire">Imperio</string>
+    <string name="tab_market">Mercado</string>
+    <string name="tab_world">Mundo</string>
+    <string name="tab_more">Más</string>
+
+    <!-- ============== Stats / labels ============== -->
+    <string name="label_cash">Cash</string>
+    <string name="label_reputation">Reputación</string>
+    <string name="label_level">Nivel</string>
+    <string name="label_xp">XP</string>
+    <string name="label_energy">Energía</string>
+    <string name="label_happiness">Felicidad</string>
+    <string name="label_employees">Empleados</string>
+    <string name="label_buildings">Edificios</string>
+    <string name="label_inventory">Inventario</string>
+    <string name="label_day">Día</string>
+
+    <!-- ============== Common dialogs ============== -->
+    <string name="dialog_irreversible">Esta acción NO se puede deshacer.</string>
+    <string name="dialog_confirm_title">¿Estás seguro?</string>
+
+    <!-- ============== Errors / warnings ============== -->
+    <string name="error_no_funds">Sin fondos</string>
+    <string name="error_no_funds_msg">No tienes suficiente cash.</string>
+    <string name="error_no_energy">Sin energía</string>
 </resources>

@@ -26,6 +26,8 @@ import com.empiretycoon.game.util.fmtMoney
 fun WealthScreen(state: GameState, vm: GameViewModel) {
     var tab by rememberSaveable { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
+        // FIX P2: header de patrimonio total con liquid + activos.
+        NetWorthHeader(state)
         TabRow(
             selectedTabIndex = tab,
             containerColor = InkSoft,
@@ -37,6 +39,37 @@ fun WealthScreen(state: GameState, vm: GameViewModel) {
         when (tab) {
             0 -> StocksTab(state, vm)
             1 -> RealEstateTab(state, vm)
+        }
+    }
+}
+
+@Composable
+private fun NetWorthHeader(state: GameState) {
+    val cash = state.company.cash + state.player.cash
+    val stocksValue = state.stocks.sumOf { s ->
+        (state.holdings.shares[s.ticker] ?: 0) * s.price
+    }
+    val realEstateValue = state.realEstate.totalValue
+    val cryptoValue = state.crypto.holdings.sumOf { h ->
+        val price = state.crypto.token(h.symbol)?.price ?: 0.0
+        (h.amount + h.staked + h.miningPending) * price
+    }
+    val loansDebt = state.loans.active.sumOf { it.remainingPrincipal }
+    val netWorth = cash + stocksValue + realEstateValue + cryptoValue - loansDebt
+    EmpireCard(borderColor = Gold) {
+        SectionTitle("Patrimonio total",
+            "Cash + Bolsa + Inmuebles + Cripto − Deuda")
+        Spacer(Modifier.height(6.dp))
+        Text(netWorth.fmtMoney(),
+            color = if (netWorth >= 0) Gold else Ruby,
+            fontWeight = FontWeight.Black, fontSize = 22.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "💵 ${cash.fmtMoney()}  ·  📈 ${stocksValue.fmtMoney()}  ·  🏘 ${realEstateValue.fmtMoney()}  ·  🪙 ${cryptoValue.fmtMoney()}",
+            color = Dim, fontSize = 10.sp
+        )
+        if (loansDebt > 0) {
+            Text("Deuda activa: −${loansDebt.fmtMoney()}", color = Ruby, fontSize = 10.sp)
         }
     }
 }

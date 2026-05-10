@@ -109,6 +109,15 @@ fun CasinoScreen(state: GameState, vm: GameViewModel) {
         }
 
         Spacer(Modifier.height(12.dp))
+        // FIX P2: declarar house edge para que el jugador sepa que la
+        // casa siempre gana en el largo plazo (37 casillas, 1 verde =
+        // ~5.4% de ventaja teórica sobre rojo/negro).
+        Text(
+            "ℹ️ House edge ~5.4% (1 verde de 19). En el largo plazo la casa gana.",
+            color = Dim, fontSize = 10.sp,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = bet,
             onValueChange = { bet = it.filter { c -> c.isDigit() }.take(8) },
