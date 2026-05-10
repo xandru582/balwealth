@@ -30,10 +30,15 @@ import com.empiretycoon.game.ui.screens.jobs.CarpenterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ChefJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DetectiveJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DirectorJobScreen
+import com.empiretycoon.game.ui.screens.jobs.DoctorJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ElectricianJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FirefighterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FishermanJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FootballJobScreen
+import com.empiretycoon.game.ui.screens.jobs.GardenerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.IllusionistJobScreen
+import com.empiretycoon.game.ui.screens.jobs.RacingJobScreen
+import com.empiretycoon.game.ui.screens.jobs.VetJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DentistJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FarmerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.GarbageJobScreen
@@ -120,7 +125,12 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.TRUCKER -> TruckerJobScreen(state, onFinish, onCancel)
             JobId.AIRLINE_PILOT -> PilotJobScreen(state, onFinish, onCancel)
             JobId.TRAIN_DRIVER -> TrainDriverJobScreen(state, onFinish, onCancel)
-            else -> { activeMiniJob = null }  // safety: no debería ocurrir
+            JobId.RACING_DRIVER -> RacingJobScreen(state, onFinish, onCancel)
+            JobId.GARDENER -> GardenerJobScreen(state, onFinish, onCancel)
+            JobId.VET -> VetJobScreen(state, onFinish, onCancel)
+            JobId.ILLUSIONIST -> IllusionistJobScreen(state, onFinish, onCancel)
+            JobId.DOCTOR -> DoctorJobScreen(state, onFinish, onCancel)
+            else -> { activeMiniJob = null }  // unreachable: all 40 jobs implemented
         }
         return
     }
