@@ -324,7 +324,8 @@ fun WorldScreen(state: GameState, vm: GameViewModel, onNavigateTo: (String) -> U
                 tileSize = tileSize,
                 viewW = viewW,
                 viewH = viewH,
-                densityScale = density.density
+                densityScale = density.density,
+                playerBuildings = state.company.buildings
             )
         }
 

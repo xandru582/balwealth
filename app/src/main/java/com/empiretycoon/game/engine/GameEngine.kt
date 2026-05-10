@@ -32,24 +32,28 @@ object GameEngine {
             state.research,
             state.player,
             state.qualityInventory,
-            state.rngSeed + nextTick
+            state.rngSeed + nextTick,
+            traitProductionMul = state.traitTree.multiplierFor(TraitEffectType.PRODUCTION_MUL)
         )
         var company = prod.company
         var qualityInventory = prod.qualityInventory
-        var player = state.player.addXp(prod.xpEarned)
+        // TraitTree PLAYER_XP_MUL aplicado a la XP del jugador
+        val xpMul = state.traitTree.multiplierFor(TraitEffectType.PLAYER_XP_MUL)
+        var player = state.player.addXp((prod.xpEarned * xpMul).toLong())
 
         // 2) investigación en curso
         var research = state.research
         research.inProgressId?.let { techId ->
-            val left = research.inProgressSecondsLeft - (1.0 +
-                    state.player.stats.intelligence * 0.02)
+            val researchSpeedMul = state.traitTree.multiplierFor(TraitEffectType.RESEARCH_SPEED_MUL)
+            val left = research.inProgressSecondsLeft - ((1.0 +
+                    state.player.stats.intelligence * 0.02) * researchSpeedMul)
             if (left <= 0) {
                 research = research.copy(
                     completed = research.completed + techId,
                     inProgressId = null,
                     inProgressSecondsLeft = 0.0
                 )
-                player = player.addXp(250)
+                player = player.addXp((250 * xpMul).toLong())
                 company = company.addXp(500)
             } else {
                 research = research.copy(inProgressSecondsLeft = left)
@@ -518,11 +522,12 @@ object GameEngine {
         val have = state.inventoryOf(resourceId)
         if (have < qty) return state
         val rawPrice = state.market.sellPriceOf(resourceId)
-        // bono de marketing + carisma
+        // bono de marketing + carisma + TraitTree CASH_GAIN_MUL
         val mktBonus = 1.0 +
             state.research.completed.sumOf { id -> TechCatalog.byId(id)?.marketBonus ?: 0.0 } +
             state.player.stats.charisma.coerceAtMost(100) * 0.003
-        val price = rawPrice * mktBonus
+        val cashMul = state.traitTree.multiplierFor(TraitEffectType.CASH_GAIN_MUL)
+        val price = rawPrice * mktBonus * cashMul
         val total = price * qty
         val inv = state.company.inventory + (resourceId to (have - qty))
         val company = state.company.copy(

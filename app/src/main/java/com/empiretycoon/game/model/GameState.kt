@@ -164,7 +164,10 @@ data class GameState(
     val traitTree: TraitTreeState = TraitTreeState(),
 
     /** v17 — Empresas de oficios con empleados especializados (Fase C). */
-    val jobBusinesses: JobBusinessesState = JobBusinessesState()
+    val jobBusinesses: JobBusinessesState = JobBusinessesState(),
+
+    /** v17 — Adquisiciones hostiles de rivales. */
+    val hostileTakeover: HostileTakeoverState = HostileTakeoverState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()

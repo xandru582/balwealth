@@ -205,6 +205,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         RivalEngine.pushTrashTalk(it, Random(it.rngSeed xor it.tick))
     }
     fun dismissTrashTalk() = mutate { RivalEngine.clearTrashTalk(it) }
+    fun launchHostileTakeover(rivalId: String) = mutate {
+        HostileTakeoverEngine.launchTakeover(it, rivalId, Random(it.rngSeed xor it.tick))
+    }
 
     // ---- Banca, IPO, Opciones (Agente 4) ----
     fun takeLoan(offerId: String) = mutate { BankingEngine.takeLoan(it, offerId) }
@@ -285,7 +288,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val mktBonus = 1.0 +
             st.research.completed.sumOf { id -> TechCatalog.byId(id)?.marketBonus ?: 0.0 } +
             st.player.stats.charisma.coerceAtMost(100) * 0.003
-        val total = rawPrice * mktBonus * tier.mult * taken
+        val cashMul = st.traitTree.multiplierFor(TraitEffectType.CASH_GAIN_MUL)
+        val total = rawPrice * mktBonus * tier.mult * taken * cashMul
         val company = st.company.copy(cash = st.company.cash + total).addXp((total / 18).toLong())
         st.copy(
             qualityInventory = newQInv,

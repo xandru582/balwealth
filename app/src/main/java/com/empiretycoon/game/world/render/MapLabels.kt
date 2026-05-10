@@ -5,6 +5,8 @@ import android.graphics.Typeface
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import com.empiretycoon.game.model.Building
+import com.empiretycoon.game.model.BuildingType
 import com.empiretycoon.game.world.CityBlueprint
 import com.empiretycoon.game.world.PlaceKind
 import com.empiretycoon.game.world.emoji
@@ -23,9 +25,18 @@ import com.empiretycoon.game.world.isLandmark
  *  - **Landmarks** (STATUE_MYSTERIOUS, BEACHED_UFO, ICE_CREAM_VAN) además
  *    pintan un emoji grande (🗿/🛸/🍦) en el tile mismo, así son
  *    visualmente distintos al resto del mapa.
+ *  - **Slots ocupados por el jugador** (FACTORY_SLOT, MINE_SLOT, FARM_SLOT
+ *    asignados a un Building del jugador) muestran el nombre del edificio
+ *    con un emoji de propiedad (👑) y color dorado.
  *  - Cull: solo procesa lugares dentro del viewport con un tile de margen.
  *  - Llamar al FINAL del pipeline (después de vignette) para que las
  *    etiquetas siempre se vean nítidas sin atenuación atmosférica.
+ *
+ * Mapeo Slot → Building:
+ *  - Determinista por orden: el Nº-iésimo Building de tipo FACTORY se
+ *    asigna al N-ésimo FACTORY_SLOT (en orden de la lista CityBlueprint.places).
+ *  - Idem para MINE / FARM / BAKERY (los SAWMILL/SMELTER/etc. caen sobre
+ *    los slots fabriles disponibles).
  */
 fun DrawScope.drawPlaceLabels(
     originTileX: Float,
@@ -33,7 +44,8 @@ fun DrawScope.drawPlaceLabels(
     tileSize: Float,
     viewW: Int,
     viewH: Int,
-    densityScale: Float
+    densityScale: Float,
+    playerBuildings: List<Building> = emptyList()
 ) {
     // Tamaño de fuente proporcional pero con mínimos legibles.
     val labelTextSize = (11f * densityScale).coerceAtLeast(22f)
@@ -52,11 +64,28 @@ fun DrawScope.drawPlaceLabels(
             android.graphics.Color.argb(220, 0, 0, 0)
         )
     }
+    val ownedPaint = Paint().apply {
+        isAntiAlias = true
+        color = android.graphics.Color.argb(255, 255, 209, 102) // Gold
+        textSize = labelTextSize
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT_BOLD
+        setShadowLayer(
+            4f * densityScale.coerceAtLeast(1f),
+            0f,
+            1f * densityScale.coerceAtLeast(1f),
+            android.graphics.Color.argb(240, 0, 0, 0)
+        )
+    }
     val emojiPaint = Paint().apply {
         isAntiAlias = true
         textSize = landmarkEmojiSize
         textAlign = Paint.Align.CENTER
     }
+
+    // Pre-calcula el mapping placeId → Building (deterministic order).
+    val ownedById: Map<String, Building> = if (playerBuildings.isEmpty()) emptyMap()
+    else buildOwnedSlotMap(playerBuildings)
 
     drawIntoCanvas { canvas ->
         val nc = canvas.nativeCanvas
@@ -78,14 +107,47 @@ fun DrawScope.drawPlaceLabels(
                 )
             }
 
-            // Nombre del lugar 1 línea por encima del tile.
+            // Nombre del lugar: si está ocupado por un edificio del jugador,
+            // usa el nombre del edificio + emoji 👑 y paint dorado.
+            val owned = ownedById[place.id]
+            val displayLabel: String
+            val paintToUse: Paint
+            if (owned != null) {
+                displayLabel = "👑 ${owned.type.emoji} ${owned.name}"
+                paintToUse = ownedPaint
+            } else {
+                displayLabel = place.name
+                paintToUse = labelPaint
+            }
             val labelY = sy - tileSize * 0.15f
             nc.drawText(
-                place.name,
+                displayLabel,
                 sx,
                 labelY,
-                labelPaint
+                paintToUse
             )
         }
     }
+}
+
+/**
+ * Asigna cada Building a un CityPlace slot del tipo correspondiente,
+ * en orden de aparición. Los tipos sin slot directo (SAWMILL, SMELTER,
+ * REFINERY, OFFICE, JEWELRY, SHIPYARD, BAKERY, WAREHOUSE) caen sobre los
+ * slots fabriles disponibles tras los FACTORY.
+ */
+private fun buildOwnedSlotMap(buildings: List<Building>): Map<String, Building> {
+    val factorySlots = CityBlueprint.places.filter { it.kind == PlaceKind.FACTORY_SLOT }.map { it.id }
+    val mineSlots = CityBlueprint.places.filter { it.kind == PlaceKind.MINE_SLOT }.map { it.id }
+    val farmSlots = CityBlueprint.places.filter { it.kind == PlaceKind.FARM_SLOT }.map { it.id }
+
+    val mines = buildings.filter { it.type == BuildingType.MINE }
+    val farms = buildings.filter { it.type == BuildingType.FARM }
+    val rest = buildings.filter { it.type != BuildingType.MINE && it.type != BuildingType.FARM }
+
+    val out = HashMap<String, Building>()
+    mines.forEachIndexed { i, b -> if (i < mineSlots.size) out[mineSlots[i]] = b }
+    farms.forEachIndexed { i, b -> if (i < farmSlots.size) out[farmSlots[i]] = b }
+    rest.forEachIndexed { i, b -> if (i < factorySlots.size) out[factorySlots[i]] = b }
+    return out
 }

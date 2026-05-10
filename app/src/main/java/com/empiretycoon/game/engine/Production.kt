@@ -30,7 +30,8 @@ object Production {
         research: ResearchState,
         player: Player,
         qualityInventory: QualityInventory,
-        seed: Long
+        seed: Long,
+        traitProductionMul: Double = 1.0
     ): Tick {
         val notifs = mutableListOf<GameNotification>()
         var inv = HashMap(company.inventory)
@@ -40,10 +41,11 @@ object Production {
         val rng = Random(seed)
 
         // bono global por investigaciones completadas
-        val prodBonus = 1.0 +
+        val prodBonus = (1.0 +
             research.completed.sumOf { id -> TechCatalog.byId(id)?.productionBonus ?: 0.0 } +
             // bonus por dex del jugador (hasta +40%)
-            (player.stats.dexterity.coerceAtMost(100) * 0.004)
+            (player.stats.dexterity.coerceAtMost(100) * 0.004)) *
+            traitProductionMul
 
         // FIX BUG-14-01: NO reutilizar productionBonus aquí — ya está aplicado
         // en `prodBonus` y duplicarlo dispararía la velocidad. Para calidad,
