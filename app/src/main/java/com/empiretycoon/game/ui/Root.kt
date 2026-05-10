@@ -117,15 +117,19 @@ fun Root(vm: GameViewModel) {
         return
     }
 
-    // Splash de marca durante 2.5s
+    // Splash de marca durante 1.5s (skipeable con tap).
     var splashShown by rememberSaveable { mutableStateOf(false) }
     if (!splashShown) {
-        SplashScreen(autoMs = 2_500L) { splashShown = true }
+        SplashScreen(autoMs = 1_500L) { splashShown = true }
         return
     }
 
-    // Onboarding: nombre del jugador y empresa
-    if (state.company.name == "Nueva Empresa S.L." && state.tick < 3) {
+    // Onboarding: nombre del jugador y empresa.
+    // FIX: antes había `state.tick < 3` que hacía que el dialog desapareciera
+    // a los pocos segundos (el game loop avanza ticks durante el splash). Ahora
+    // el dialog se mantiene mientras el usuario no haya renombrado la empresa,
+    // que es el flag idiomático: name == default → necesita onboarding.
+    if (state.company.name == "Nueva Empresa S.L.") {
         OnboardingDialog(onConfirm = { p, c -> vm.rename(p, c) })
     }
 
@@ -526,8 +530,14 @@ private fun OnboardingDialog(onConfirm: (String, String) -> Unit) {
         dismissOnBackPress = false,
         dismissOnClickOutside = false,
         footer = {
+            // FIX: el default antes era "Nueva Empresa S.L." que es el MISMO
+            // valor que dispara el onboarding → loop infinito si el usuario
+            // pulsaba "Empezar" sin escribir nada. Ahora el default es
+            // distinto, garantizando que el dialog sí se cierra.
             TextButton(onClick = {
-                onConfirm(pName.ifBlank { "Empresario" }, cName.ifBlank { "Nueva Empresa S.L." })
+                val finalP = pName.trim().ifBlank { "Empresario" }
+                val finalC = cName.trim().ifBlank { "Mi Empresa S.L." }
+                onConfirm(finalP, finalC)
                 show = false
             }) { Text("Empezar", color = Gold) }
         }

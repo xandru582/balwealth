@@ -58,7 +58,7 @@ fun TutorialIntroDialog(
         title = {
             Column {
                 Text(
-                    "¡Bienvenido a Empire Tycoon!",
+                    "¡Bienvenido a BalWealth!",
                     color = Gold,
                     fontWeight = FontWeight.Black,
                     fontSize = 20.sp

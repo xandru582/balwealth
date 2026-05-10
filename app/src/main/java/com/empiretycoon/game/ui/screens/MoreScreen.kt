@@ -190,7 +190,7 @@ private fun SettingsTab(state: GameState, vm: GameViewModel) {
             EmpireCard {
                 SectionTitle("Datos y ayuda")
                 Spacer(Modifier.height(6.dp))
-                Text("Empire Tycoon v1.0.0 — juego de simulación de negocios.",
+                Text("BalWealth v17-infinite — tycoon · RPG · mundo 2D · 40 oficios.",
                     color = Dim, fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
                 Text("El juego se guarda automáticamente cada 10s y al cerrar.",

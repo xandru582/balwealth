@@ -68,7 +68,7 @@ object EndingCatalog {
                 karmaMax = 100,
                 minReputation = 80
             ),
-            shareLine = "He alcanzado el final SANTO en Empire Tycoon. Karma máximo, legado eterno."
+            shareLine = "He alcanzado el final SANTO en BalWealth. Karma máximo, legado eterno."
         ),
 
         // ---------- PHILANTROPIST ----------
@@ -86,7 +86,7 @@ object EndingCatalog {
                 karmaMax = 100,
                 minReputation = 60
             ),
-            shareLine = "Final FILÁNTROPO en Empire Tycoon. El imperio que dejé pesa más por sus huellas."
+            shareLine = "Final FILÁNTROPO en BalWealth. El imperio que dejé pesa más por sus huellas."
         ),
 
         // ---------- REVOLUTIONARY ----------
@@ -124,7 +124,7 @@ object EndingCatalog {
                 minReputation = 90,
                 achievementsRequired = listOf("ach_cash_1b", "ach_rep_max")
             ),
-            shareLine = "Final INMORTAL en Empire Tycoon. Mi nombre se grabará. Tu opinión, no."
+            shareLine = "Final INMORTAL en BalWealth. Mi nombre se grabará. Tu opinión, no."
         ),
 
         // ---------- TYRANT ----------
@@ -160,7 +160,7 @@ object EndingCatalog {
                 karmaMax = -50,
                 achievementsRequired = listOf("ach_hidden_bankrupt")
             ),
-            shareLine = "Final PRESO en Empire Tycoon. El imperio cae. La conciencia, no."
+            shareLine = "Final PRESO en BalWealth. El imperio cae. La conciencia, no."
         ),
 
         // ---------- BURNOUT ----------
@@ -249,7 +249,7 @@ object EndingCatalog {
                 karmaMax = 30,
                 achievementsRequired = listOf("ach_hidden_night_owl", "ach_day_100")
             ),
-            shareLine = "Final SECRETO desbloqueado en Empire Tycoon. Solo el 1% lo verá."
+            shareLine = "Final SECRETO desbloqueado en BalWealth. Solo el 1% lo verá."
         )
     )
 
