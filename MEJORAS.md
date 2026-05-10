@@ -63,22 +63,19 @@ El juego ya era enorme antes de v17 (24 motores, 33 pantallas, 169 archivos Kotl
 
 ### Tanda 8 (commits `d724382`–`3dc4153`, `ecca259`–`17f2d6a`) — Mini-juegos + TraitTree
 - ✅ **TraitTreeEngine**: 60 talentos en 5 ramas, prereq lineal, coste en Resilience XP, UI con tabs por rama. Otros engines pueden leer multiplicadores via `state.traitTree.multiplierFor(type)`.
-- ✅ **14 mini-juegos jugables** (de 40 totales):
-    - 🚓 Policía (tap-reaction sospechosos)
-    - 🚒 Bombero (apagar fuegos en grid 4×4)
-    - 🥖 Panadero (timing del horno con barra de tueste)
-    - 👨‍🍳 Chef (cola de tickets con receta)
-    - 🚕 Taxista (pickup + dropoff en grid 6×4)
-    - 🔧 Mecánico (identifica pieza averiada)
-    - 💻 Programador (encuentra el bug)
-    - 🦸 Detective (find-the-clue en grid 5×5)
-    - 🥊 Boxeador (esquiva direccional rítmica)
-    - 🌊 Pescador (agotando peces)
-    - ⚽ Futbolista (penaltis vs portero)
-    - 🎮 Streamer (secuencia de colores)
-    - 🎨 Pintor (traza puntos en orden)
-    - 💊 Farmacéutico (combina viales sin orden)
-- 🚧 **26 mini-juegos pendientes** (siguientes tandas): Paramédico, K-9, Médico, Dentista, Profesor, Bibliotecario, Actor, Pizzero, Barista, Heladero, Albañil, Carpintero, Electricista, Fontanero, Camionero, Piloto avión, Maquinista, Piloto carreras, Cartero, Basurero, Jardinero, Veterinario, Granjero, Diseñador UI, Director cine, Ilusionista.
+- ✅ Tanda inicial de mini-juegos: 🚓 Policía, 🚒 Bombero, 🥖 Panadero, 👨‍🍳 Chef, 🚕 Taxista, 🔧 Mecánico, 💻 Programador, 🦸 Detective, 🥊 Boxeador, 🌊 Pescador, ⚽ Futbolista, 🎮 Streamer, 🎨 Pintor, 💊 Farmacéutico.
+
+### Tanda 9 (commits `f0346e4` → `<actual>`) — Más mini-juegos
+- ✅ 👨‍🏫 **Profesor** (trivia rápida con pool de 15 preguntas)
+- ✅ 🌾 **Granjero** (rhythm de cosecha: SEMBRAR/REGAR/COSECHAR)
+- ✅ 📚 **Bibliotecario** (clasifica libros entre 4 estantes por género)
+- ✅ 🦷 **Dentista** (limpia caries en boca de 8 muelas antes de que se pudran)
+- ✅ 📮 **Cartero** (find-the-mailbox en grid 4×3 con calles consecutivas)
+- ✅ 🍦 **Heladero** (timing perfect del cucurucho con barra 0-100%)
+
+**Estado total: 20/40 mini-juegos jugables.**
+
+🚧 **20 mini-juegos pendientes**: Paramédico, K-9, Médico, Actor, Pizzero, Barista, Albañil, Carpintero, Electricista, Fontanero, Camionero, Piloto avión, Maquinista, Piloto carreras, Basurero, Jardinero, Veterinario, Diseñador UI, Director cine, Ilusionista.
 
 ---
 
@@ -86,10 +83,18 @@ El juego ya era enorme antes de v17 (24 motores, 33 pantallas, 169 archivos Kotl
 
 **Objetivo grande**: 40 oficios jugables donde el jugador controla a su personaje haciendo el trabajo (no la empresa). Cada uno con su mini-juego + posibilidad de montar empresa de ese oficio.
 
-**Estado actual: 14/40 implementados** (ver Tanda 8 arriba). Para los 26 restantes bastará con:
+**Estado actual: 20/40 implementados** (ver Tandas 8 y 9 arriba). Para los 20 restantes bastará con:
 - Crear su archivo `ui/screens/jobs/{Job}JobScreen.kt` siguiendo el patrón de los ya hechos.
 - Activar el `JobId` en `Jobs.miniGameImplemented` + `JobsScreen.when`.
-- Idealmente reciclar mecánicas existentes (rhythm, tap-secuencia, find-the-thing, timing-bar) con datos distintos para acelerar el ritmo.
+- Reciclar mecánicas existentes con datos/tema distintos:
+  - **Tap-reaction** (Police, Football) → reusar para Paramédico (QTE), Director (timing tomas).
+  - **Timing-bar** (Baker, IceCream) → reusar para Pizzero, Barista.
+  - **Rhythm direccional** (Boxer, Farmer) → reusar para Actor.
+  - **Find-the-thing** (Detective, Postman) → reusar para Veterinario.
+  - **Sort/clasifica** (Bibliotecario) → reusar para Diseñador UI.
+  - **Tap-grid** (Firefighter, Dentist) → reusar para Basurero, Jardinero.
+  - **Pickup-dropoff** (Taxi) → reusar para Camionero, Maquinista.
+  - **Trivia** (Teacher) → reusar con preguntas técnicas para Médico, K-9.
 
 ### 📋 Plan de implementación incremental
 
