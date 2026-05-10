@@ -79,7 +79,16 @@ data class CryptoHolding(
      * tanto `amount` como `avgCost` quedan a 0 y se perdería la pista).
      * Default false — saves antiguos cargan sin romperse.
      */
-    val wasEverBought: Boolean = false
+    val wasEverBought: Boolean = false,
+
+    /**
+     * Si true: en cada tick diario, después del mining payout se hace claim
+     * automático y se vende todo lo minado al precio actual. NO toca el
+     * `amount` líquido que el jugador haya comprado manualmente — solo lo
+     * minado por sus empleados. Funciona también offline (el tick diario
+     * se ejecuta en `GameEngine.advanceSeconds` al cargar el juego).
+     */
+    val autoSellMining: Boolean = false
 )
 
 /** Estado global del subsistema crypto. */

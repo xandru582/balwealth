@@ -208,6 +208,33 @@ private fun CryptoTokenCard(
                     }
                 }
             }
+            // Auto-sell toggle: vende automáticamente lo minado cada día
+            // (también offline, capped a 8h al cargar el juego).
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val expectedDaily = if (def.miningDifficulty > 0)
+                    holding.minersAssigned.toDouble() / def.miningDifficulty else 0.0
+                val expectedDailyCash = expectedDaily * state.price
+                Text(
+                    if (holding.autoSellMining)
+                        "🤖 Auto-mine ON · ~${"%,.0f".format(expectedDailyCash)} €/día"
+                    else "🤖 Auto-mine OFF (manual claim+sell)",
+                    fontSize = 11.sp,
+                    color = if (holding.autoSellMining) Emerald else Dim,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        vm.cryptoToggleAutoSellMining(state.symbol, !holding.autoSellMining)
+                    }
+                ) {
+                    Text(
+                        if (holding.autoSellMining) "Desactivar" else "Activar",
+                        color = if (holding.autoSellMining) Ruby else Emerald,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                }
+            }
             // Hire row — atajo para contratar empleados nuevos directamente como mineros
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val maxAfford = CryptoEngine.maxAffordableMiners(gameState)

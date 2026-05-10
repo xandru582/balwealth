@@ -531,6 +531,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         mutate { CryptoEngine.hireMiners(it, symbol, count) }
     fun cryptoHireMaxMiners(symbol: String) =
         mutate { CryptoEngine.hireMaxMiners(it, symbol) }
+    fun cryptoToggleAutoSellMining(symbol: String, enabled: Boolean) =
+        mutate { CryptoEngine.toggleAutoSellMining(it, symbol, enabled) }
 
     // ===================== v17 — Desastres =====================
     fun disasterToggleInsurance(on: Boolean) =

@@ -131,14 +131,47 @@ object CryptoEngine {
         // 2) Mining payout (al cierre del día)
         var company = s.company
         var holdings = crypto.holdings.toMutableList()
+        var totalAutoSellRevenue = 0.0
+        val autoSellLog = mutableListOf<Pair<String, Pair<Double, Double>>>() // symbol -> (qty, € obtenidos)
         for (i in holdings.indices) {
             val h = holdings[i]
             val def = CryptoCatalog.byMatching(h.symbol) ?: continue
             if (h.minersAssigned > 0 && def.miningDifficulty > 0) {
                 // Tokens producidos = miners / difficulty
                 val produced = h.minersAssigned.toDouble() / def.miningDifficulty
-                holdings[i] = h.copy(miningPending = h.miningPending + produced)
+                val tokenState = newTokens.find { it.symbol == h.symbol }
+                val rugged = tokenState?.rugged == true
+
+                if (h.autoSellMining && !rugged) {
+                    // Auto-sell: claim + sell todo lo minado (incluido lo pendiente
+                    // anterior) al precio actual del token. NO toca h.amount.
+                    val totalToSell = h.miningPending + produced
+                    val price = tokenState?.price ?: 0.0
+                    val proceeds = totalToSell * price
+                    if (totalToSell > 0 && proceeds > 0) {
+                        totalAutoSellRevenue += proceeds
+                        autoSellLog += h.symbol to (totalToSell to proceeds)
+                    }
+                    holdings[i] = h.copy(miningPending = 0.0)
+                } else {
+                    // Acumula en pending como siempre.
+                    holdings[i] = h.copy(miningPending = h.miningPending + produced)
+                }
             }
+        }
+        if (totalAutoSellRevenue > 0.5) {
+            company = company.copy(cash = company.cash + totalAutoSellRevenue)
+            val detail = autoSellLog.joinToString(", ") { (sym, qp) ->
+                "${"%,.4f".format(qp.first)} $sym → ${"%,.0f".format(qp.second)} €"
+            }
+            news.add(CryptoNewsItem(
+                tick = s.tick,
+                timestamp = System.currentTimeMillis(),
+                symbol = "*",
+                title = "🤖 Auto-mining: +${"%,.0f".format(totalAutoSellRevenue)} €",
+                body = "Producción vendida: $detail",
+                kind = "AUTOSELL"
+            ))
         }
 
         // 3) Stake APY (paga al bloque diario, prorrateado 1/365)
@@ -455,6 +488,29 @@ object CryptoEngine {
                 "Necesitas al menos ${"%,.0f".format(MINER_HIRE_COST)} € para fichar 1 minero.")
         }
         return hireMiners(state, symbol, n)
+    }
+
+    /**
+     * Activa/desactiva el auto-sell de mining para un token. Cuando está
+     * activo, en cada `dailyTick` el mineral producido se vende al precio
+     * actual y el cash entra directamente a la empresa, sin pasar por
+     * `miningPending` ni requerir Claim del jugador. Funciona offline.
+     */
+    fun toggleAutoSellMining(state: GameState, symbol: String, enabled: Boolean): GameState {
+        if (!state.crypto.unlocked) return state
+        if (CryptoCatalog.byMatching(symbol) == null) return state
+        val h = state.crypto.holdingOrEmpty(symbol)
+        if (h.autoSellMining == enabled) return state
+        val newH = h.copy(autoSellMining = enabled)
+        val msg = if (enabled)
+            "Auto-mine activado en $symbol. Cada día se venderá la producción al precio actual y el cash entrará en caja, también offline."
+        else "Auto-mine desactivado en $symbol. La producción se acumula en pending y necesita Claim manual."
+        return notify(
+            state.copy(crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH))),
+            if (enabled) NotificationKind.SUCCESS else NotificationKind.INFO,
+            "🤖 Auto-mine $symbol",
+            msg
+        )
     }
 
     // ===================== Helpers =====================
