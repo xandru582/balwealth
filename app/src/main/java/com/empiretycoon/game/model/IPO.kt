@@ -88,6 +88,10 @@ data class IPOState(
 
     /** Valoración estimada en función del estado de la empresa. */
     companion object {
+        /** Cap superior de valuation: 1 trillón €. Por encima de esto los
+         *  números se rompen visualmente y dan IPO precios absurdos. */
+        const val MAX_VALUATION: Double = 1_000_000_000_000.0
+
         fun estimateValuation(state: GameState): Double {
             // Mezcla cash, reputación, edificios y nivel
             val cashPart = state.company.cash * 1.5
@@ -99,7 +103,9 @@ data class IPOState(
             }
             val raw = (cashPart + realEstatePart + buildingsValue) *
                 reputationMult * levelMult
-            return max(IPOConstraints.MIN_CASH * 2.0, raw)
+            // FIX P2: cap superior para evitar overflow visual con cash
+            // ridículo en runs muy largos.
+            return max(IPOConstraints.MIN_CASH * 2.0, raw).coerceAtMost(MAX_VALUATION)
         }
 
         fun computeIpoPrice(valuation: Double): Double {

@@ -58,9 +58,11 @@ fun HelpButton(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
+    // FIX P2: tap target ≥48dp para accesibilidad. Antes 32dp (debajo del
+    // mínimo de Android Material guidelines).
     Box(
         modifier
-            .size(32.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(InkSoft)
             .border(1.dp, Gold.copy(alpha = 0.5f), CircleShape),
@@ -68,13 +70,13 @@ fun HelpButton(
     ) {
         IconButton(
             onClick = { open = true },
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Text(
                 "?",
                 color = Gold,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontSize = 16.sp
             )
         }
     }

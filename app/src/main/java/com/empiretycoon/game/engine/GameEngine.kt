@@ -246,7 +246,12 @@ object GameEngine {
             for (stock in s2.stocks) {
                 val shares = s2.holdings.shares[stock.ticker] ?: 0
                 if (shares <= 0 || stock.annualDividendYield <= 0) continue
-                val daily = stock.price * stock.annualDividendYield / 52.0
+                // FIX P2: el código viejo dividía por 52 (semanal) pero el
+                // bloque corre cada 1440 ticks (diario), así que pagaba 7×
+                // lo que debería. Ahora se divide por 365 (anual → diario).
+                // Guard contra NaN/Infinity en stock.price.
+                if (stock.price.isNaN() || stock.price.isInfinite() || stock.price <= 0) continue
+                val daily = stock.price * stock.annualDividendYield / 365.0
                 totalDividends += daily * shares
             }
             if (totalDividends > 0.0) {

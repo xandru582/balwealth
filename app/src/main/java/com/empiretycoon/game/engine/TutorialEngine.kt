@@ -120,8 +120,13 @@ object TutorialEngine {
         val prevTotal = prev.company.inventory.values.sum()
         val nextTotal = next.company.inventory.values.sum()
         if (prevTotal == nextTotal) return false
-        // Si el tick saltó por boundary diaria, ignorar (probable payroll/dividendos)
-        if (next.tick % 1_440L == 0L) return false
+        // FIX P2: antes `next.tick % 1440 == 0` ignoraba el tick exacto del
+        // cambio de día. Si el jugador hacía MARKET_TX en ese tick, no
+        // avanzaba. Ahora el check correcto es si el TICK CAMBIÓ DE DÍA
+        // entre prev y next (el delta cruza la frontera).
+        val prevDay = prev.tick / 1_440L
+        val nextDay = next.tick / 1_440L
+        if (nextDay != prevDay) return false
         return true
     }
 

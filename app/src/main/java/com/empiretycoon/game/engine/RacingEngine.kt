@@ -429,7 +429,13 @@ object RacingEngine {
         // con `transferTeamToCompany` y viceversa con `transferCompanyToTeam`.
         val owned = r.ownedTeam()
         if (owned != null) {
-            val sponsorshipIncome = r.totalSponsorDailyIncome()
+            // FIX P2: filtrar sponsors expirados ANTES de calcular el income.
+            // Antes los sponsors vencidos seguían cobrando 1 día extra antes
+            // de que se removieran. Ahora solo computan los que siguen vivos.
+            val activeNow = r.activeSponsorships.filter { it.expiresOnDay > currentDay }
+            val sponsorshipIncome = activeNow.sumOf { sp ->
+                SponsorCatalog.byId(sp.sponsorId)?.baseDailyPay ?: 0.0
+            }
             val staffCost = r.totalStaffDailyCost()
             val income = owned.sponsorIncomePerDay + sponsorshipIncome
             val cost = owned.totalDailyCost() + staffCost

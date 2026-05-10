@@ -257,17 +257,15 @@ fun WorldScreen(state: GameState, vm: GameViewModel, onNavigateTo: (String) -> U
                         intensity = 0.85f
                     )
                 }
-                // Ventanas iluminadas (sutiles, en cualquier WALL adyacente)
-                with(com.empiretycoon.game.world.render.LightingEngine) {
-                    drawLights(lights, ambient, size)
-                }
-                // Velo nocturno general (encima de tiles pero debajo de luces NO — por eso se mezcla)
+                // FIX P1: el primer pase de luces quedaba sepultado por el
+                // velo Multiply de abajo. Ahora solo dibujamos el velo PRIMERO
+                // y aplicamos las luces UNA VEZ encima. Reducimos a la mitad
+                // las allocations de Brush.radialGradient + drawCircle por luz.
                 drawRect(
                     color = Color(0xFF0A0E27).copy(alpha = (1f - ambient) * 0.55f),
                     topLeft = Offset.Zero, size = size,
                     blendMode = BlendMode.Multiply
                 )
-                // Re-aplicar luces ENCIMA del velo para que brillen sobre la oscuridad
                 with(com.empiretycoon.game.world.render.LightingEngine) {
                     drawLights(lights, ambient, size)
                 }

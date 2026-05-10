@@ -38,6 +38,47 @@ import com.empiretycoon.game.world.isLandmark
  *  - Idem para MINE / FARM / BAKERY (los SAWMILL/SMELTER/etc. caen sobre
  *    los slots fabriles disponibles).
  */
+/** FIX P1: cache de Paints reutilizables — antes se creaban 3 Paint() por
+ *  frame (~180 allocations/seg). Ahora solo si cambia densityScale. */
+private object MapLabelPaintCache {
+    @Volatile var lastDensity: Float = -1f
+    val labelPaint = Paint()
+    val ownedPaint = Paint()
+    val emojiPaint = Paint()
+
+    fun ensure(densityScale: Float) {
+        if (lastDensity == densityScale) return
+        lastDensity = densityScale
+        val textSize = (11f * densityScale).coerceAtLeast(22f)
+        val emojiSize = (28f * densityScale).coerceAtLeast(46f)
+        val shadowR1 = 3f * densityScale.coerceAtLeast(1f)
+        val shadowR2 = 4f * densityScale.coerceAtLeast(1f)
+        val shadowDy = 1f * densityScale.coerceAtLeast(1f)
+
+        labelPaint.apply {
+            isAntiAlias = true
+            color = android.graphics.Color.WHITE
+            this.textSize = textSize
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setShadowLayer(shadowR1, 0f, shadowDy, android.graphics.Color.argb(220, 0, 0, 0))
+        }
+        ownedPaint.apply {
+            isAntiAlias = true
+            color = android.graphics.Color.argb(255, 255, 209, 102)
+            this.textSize = textSize
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setShadowLayer(shadowR2, 0f, shadowDy, android.graphics.Color.argb(240, 0, 0, 0))
+        }
+        emojiPaint.apply {
+            isAntiAlias = true
+            this.textSize = emojiSize
+            textAlign = Paint.Align.CENTER
+        }
+    }
+}
+
 fun DrawScope.drawPlaceLabels(
     originTileX: Float,
     originTileY: Float,
@@ -47,41 +88,10 @@ fun DrawScope.drawPlaceLabels(
     densityScale: Float,
     playerBuildings: List<Building> = emptyList()
 ) {
-    // Tamaño de fuente proporcional pero con mínimos legibles.
-    val labelTextSize = (11f * densityScale).coerceAtLeast(22f)
-    val landmarkEmojiSize = (28f * densityScale).coerceAtLeast(46f)
-
-    val labelPaint = Paint().apply {
-        isAntiAlias = true
-        color = android.graphics.Color.WHITE
-        textSize = labelTextSize
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT_BOLD
-        setShadowLayer(
-            3f * densityScale.coerceAtLeast(1f),
-            0f,
-            1f * densityScale.coerceAtLeast(1f),
-            android.graphics.Color.argb(220, 0, 0, 0)
-        )
-    }
-    val ownedPaint = Paint().apply {
-        isAntiAlias = true
-        color = android.graphics.Color.argb(255, 255, 209, 102) // Gold
-        textSize = labelTextSize
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT_BOLD
-        setShadowLayer(
-            4f * densityScale.coerceAtLeast(1f),
-            0f,
-            1f * densityScale.coerceAtLeast(1f),
-            android.graphics.Color.argb(240, 0, 0, 0)
-        )
-    }
-    val emojiPaint = Paint().apply {
-        isAntiAlias = true
-        textSize = landmarkEmojiSize
-        textAlign = Paint.Align.CENTER
-    }
+    MapLabelPaintCache.ensure(densityScale)
+    val labelPaint = MapLabelPaintCache.labelPaint
+    val ownedPaint = MapLabelPaintCache.ownedPaint
+    val emojiPaint = MapLabelPaintCache.emojiPaint
 
     // Pre-calcula el mapping placeId → Building (deterministic order).
     val ownedById: Map<String, Building> = if (playerBuildings.isEmpty()) emptyMap()

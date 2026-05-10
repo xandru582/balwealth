@@ -416,18 +416,31 @@ object HrEngine {
 
     /**
      * Refresca el pool de candidatos. Se llama al inicio del juego y a diario.
-     * Las ofertas vencidas (`expiresAtTick < tick`) se descartan.
+     *
+     * FIX P2: rotación parcial en lugar de reemplazo total. Antes
+     * `refreshApplicants` borraba TODA la pool y generaba una nueva → si
+     * había un candidato perfecto el jugador lo perdía sin querer al cambio
+     * de día. Ahora preservamos los candidatos no-vencidos y rellenamos
+     * hasta el target con candidatos nuevos.
      */
     fun refreshApplicants(state: GameState, rng: Random): GameState {
-        val pool = ApplicantGenerator.pool(
-            reputation = state.company.reputation,
-            level = state.company.level,
-            rng = rng,
-            currentTick = state.tick
-        )
+        val tick = state.tick
+        // Filtra los actuales no expirados.
+        val keep = state.hrState.applicants.filter { it.expiresAtTick > tick }
+        // Pool target ~6 candidatos (lo que generaba ApplicantGenerator antes).
+        val target = 6
+        val freshNeeded = (target - keep.size).coerceAtLeast(0)
+        val fresh = if (freshNeeded > 0) {
+            ApplicantGenerator.pool(
+                reputation = state.company.reputation,
+                level = state.company.level,
+                rng = rng,
+                currentTick = tick
+            ).take(freshNeeded)
+        } else emptyList()
         val newHr = state.hrState.copy(
-            applicants = pool,
-            lastApplicantRefreshTick = state.tick
+            applicants = keep + fresh,
+            lastApplicantRefreshTick = tick
         )
         return state.copy(hrState = newHr)
     }

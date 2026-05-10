@@ -162,7 +162,9 @@ object DisasterEngine {
         val (prodImp, sellImp, buyImp) = mitigationBoost(strategy)
         val newD = d.copy(
             mitigated = true,
-            productionMul = (d.productionMul + prodImp).coerceAtMost(1.0),
+            // FIX P2: cap simétrico 0.1..2.0 (antes solo coerceAtMost(1.0)
+            // → asimétrico vs los demás multiplicadores).
+            productionMul = (d.productionMul + prodImp).coerceIn(0.1, 2.0),
             sellPriceMul = (d.sellPriceMul + sellImp).coerceIn(0.1, 2.0),
             // Cap simétrico (0.5..2.0) por uniformidad con sellPriceMul, evita
             // que un buyPriceMul "heredado" alto quede sin techo si el desastre

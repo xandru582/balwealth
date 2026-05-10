@@ -53,9 +53,14 @@ object Production {
         // (cada tech aporta +0.02, máximo 0.30).
         val qualityResearchBonus = (research.completed.size * 0.02).coerceIn(0.0, 0.30)
 
-        // felicidad reduce productividad si baja de 50
-        val happinessFactor = if (player.happiness >= 50) 1.0
-        else 0.5 + (player.happiness / 100.0)
+        // FIX P2: felicidad ahora es simétrica.
+        //  - Por debajo de 50 penaliza (igual que antes, hasta 0.5×).
+        //  - Por encima de 50 bonifica linealmente (50→1.0, 100→1.10).
+        // Total range: 0.5×..1.10×. Antes solo penalizaba.
+        val happinessFactor = when {
+            player.happiness >= 50 -> 1.0 + (player.happiness - 50) * 0.002
+            else -> 0.5 + (player.happiness / 100.0)
+        }
 
         // PERF FIX: pre-compute employees grouped by buildingId once per tick.
         // Antes: cada edificio hacía un .filter() sobre todos los empleados →

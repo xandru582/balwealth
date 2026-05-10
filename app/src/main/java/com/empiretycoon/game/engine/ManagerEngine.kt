@@ -278,22 +278,43 @@ object ManagerEngine {
     /** HR: asigna empleados libres a edificios sin staff; despide poco leales. */
     private fun applyHr(state: GameState, mgr: Manager, rng: Random): GameState {
         var s = state
-        // 1) Despedir los muy desleales si está configurado
-        val toFire = s.company.employees.filter { it.loyalty <= mgr.config.autoFireBelowLoyalty }
+        // 1) Despedir los muy desleales si está configurado.
+        // FIX P2: protege ejecutivos (CXOs) y rol DIRECTOR del auto-fire —
+        // son irreemplazables y costaron mucho fichar. El usuario debe
+        // decidir manualmente si los despide.
+        val protectedIds = s.hrState.executives.assignedIds()
+        val toFire = s.company.employees.filter {
+            it.loyalty <= mgr.config.autoFireBelowLoyalty &&
+                it.id !in protectedIds &&
+                s.hrState.profiles[it.id]?.role != EmployeeRole.DIRECTOR &&
+                s.hrState.profiles[it.id]?.role != EmployeeRole.CXO
+        }
         if (toFire.isNotEmpty()) {
             val first = toFire.first()
             s = GameEngine.fire(s, first.id)
             return s.copy(managers = bumpAction(s.managers, mgr.id, state.tick))
         }
 
-        // 2) Asignar empleados libres a edificios sin trabajadores
-        val freeEmployees = s.company.employees.count { it.assignedBuildingId == null }
+        // 2) Asignar empleados libres a edificios sin trabajadores.
+        // FIX P2: antes solo asignaba 1 trabajador por tick → con 50 plazas
+        // vacías tardaba 50 segundos reales en llenar todo. Ahora itera
+        // hasta agotar empleados libres o hasta un cap de 50 por tick para
+        // no bloquear el motor en escenarios extremos.
+        var freeEmployees = s.company.employees.count { it.assignedBuildingId == null }
         if (freeEmployees > 0) {
-            val needsStaff = s.company.buildings
-                .filter { it.assignedWorkers < it.workerCapacity && it.type != BuildingType.WAREHOUSE }
-                .sortedByDescending { it.level }
-            for (b in needsStaff) {
+            var assignedThisTick = 0
+            val maxPerTick = 50
+            while (freeEmployees > 0 && assignedThisTick < maxPerTick) {
+                val needsStaff = s.company.buildings
+                    .filter { it.assignedWorkers < it.workerCapacity && it.type != BuildingType.WAREHOUSE }
+                    .sortedByDescending { it.level }
+                if (needsStaff.isEmpty()) break
+                val b = needsStaff.first()
                 s = GameEngine.assignWorkersDelta(s, b.id, +1)
+                assignedThisTick++
+                freeEmployees = s.company.employees.count { it.assignedBuildingId == null }
+            }
+            if (assignedThisTick > 0) {
                 return s.copy(managers = bumpAction(s.managers, mgr.id, state.tick))
             }
         }
