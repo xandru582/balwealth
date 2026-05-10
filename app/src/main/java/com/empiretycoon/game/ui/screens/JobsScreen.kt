@@ -30,11 +30,13 @@ import com.empiretycoon.game.ui.screens.jobs.FishermanJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FootballJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DentistJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FarmerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.IceCreamJobScreen
 import com.empiretycoon.game.ui.screens.jobs.LibrarianJobScreen
 import com.empiretycoon.game.ui.screens.jobs.MechanicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PainterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PharmacistJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PostmanJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ProgrammerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.StreamerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.TaxiJobScreen
@@ -86,6 +88,8 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.FARMER -> FarmerJobScreen(state, onFinish, onCancel)
             JobId.LIBRARIAN -> LibrarianJobScreen(state, onFinish, onCancel)
             JobId.DENTIST -> DentistJobScreen(state, onFinish, onCancel)
+            JobId.POSTMAN -> PostmanJobScreen(state, onFinish, onCancel)
+            JobId.ICE_CREAM_SELLER -> IceCreamJobScreen(state, onFinish, onCancel)
             else -> { activeMiniJob = null }  // safety: no debería ocurrir
         }
         return
