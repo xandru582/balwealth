@@ -47,12 +47,23 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            val loaded = repo.load()
+            // FIX PERF: la carga + offline catch-up se hace en Dispatchers.Default
+            // para no bloquear el hilo principal y disparar ANR cuando hay
+            // muchos empleados/mineros y muchas horas offline.
+            val loaded = withContext(Dispatchers.IO) { repo.load() }
             if (loaded != null) {
                 val now = System.currentTimeMillis()
+                // Cap reducido a 2h (era 8h). Con muchos mineros un advanceSeconds
+                // de 28.800 iteraciones tarda demasiado y bloquea la app.
+                // 2h = 7.200 ticks = 5 días in-game, suficiente para eventos
+                // como auto-mining offline.
                 val elapsedSec = ((now - loaded.lastRealTimeMs) / 1000L)
-                    .coerceIn(0, 60 * 60 * 8)
-                val catched = if (elapsedSec > 0) GameEngine.advanceSeconds(loaded, elapsedSec) else loaded
+                    .coerceIn(0, 60 * 60 * 2)
+                val catched = if (elapsedSec > 0)
+                    withContext(Dispatchers.Default) {
+                        GameEngine.advanceSeconds(loaded, elapsedSec)
+                    }
+                else loaded
                 _state.value = catched.copy(lastRealTimeMs = now)
             }
             _state.value = GameEngine.refreshCandidates(_state.value)

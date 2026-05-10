@@ -57,6 +57,13 @@ object Production {
         val happinessFactor = if (player.happiness >= 50) 1.0
         else 0.5 + (player.happiness / 100.0)
 
+        // PERF FIX: pre-compute employees grouped by buildingId once per tick.
+        // Antes: cada edificio hacía un .filter() sobre todos los empleados →
+        // O(M×N). Con muchos mineros sin asignar (autoSellMining) eso convertía
+        // el offline progress en una tortura. Ahora O(N) total + O(1) lookup.
+        val employeesByBuilding: Map<String, List<Employee>> =
+            company.employees.groupBy { it.assignedBuildingId ?: "__unassigned__" }
+
         for (b in company.buildings) {
             val recipe = b.currentRecipeId?.let { AdvancedRecipeCatalog.byId(it) }
             if (recipe == null) { newBuildings.add(b); continue }
@@ -79,8 +86,8 @@ object Production {
                 }
             }
 
-            // Multiplicador de empleados asignados
-            val avgSkill = averageSkillOfAssigned(company, b)
+            // Multiplicador de empleados asignados (lookup O(1) en el mapa)
+            val avgSkill = averageSkillOfAssignedFromMap(employeesByBuilding[b.id])
             val speed = b.productivity * prodBonus * happinessFactor *
                 avgSkill * (b.assignedWorkers.coerceAtMost(b.workerCapacity) /
                     b.workerCapacity.toDouble().coerceAtLeast(1.0))
@@ -146,6 +153,13 @@ object Production {
     private fun averageSkillOfAssigned(company: Company, b: Building): Double {
         val assigned = company.employees.filter { it.assignedBuildingId == b.id }
         if (assigned.isEmpty()) return 0.9
+        val avg = assigned.sumOf { it.effectiveOutput() } / assigned.size
+        return avg.coerceIn(0.4, 2.2)
+    }
+
+    /** Versión rápida que recibe la lista pre-filtrada del mapa. */
+    private fun averageSkillOfAssignedFromMap(assigned: List<Employee>?): Double {
+        if (assigned.isNullOrEmpty()) return 0.9
         val avg = assigned.sumOf { it.effectiveOutput() } / assigned.size
         return avg.coerceIn(0.4, 2.2)
     }
