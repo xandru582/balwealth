@@ -50,7 +50,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             // FIX PERF: la carga + offline catch-up se hace en Dispatchers.Default
             // para no bloquear el hilo principal y disparar ANR cuando hay
             // muchos empleados/mineros y muchas horas offline.
-            val loaded = withContext(Dispatchers.IO) { repo.load() }
+            val loadedRaw = withContext(Dispatchers.IO) { repo.load() }
+            val loaded = loadedRaw?.let { migrateLegacyMinerEmployees(it) }
             if (loaded != null) {
                 val now = System.currentTimeMillis()
                 // Cap reducido a 2h (era 8h). Con muchos mineros un advanceSeconds
@@ -123,6 +124,28 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             safeSave(_state.value.copy(lastRealTimeMs = System.currentTimeMillis()))
         }
         super.onCleared()
+    }
+
+    /**
+     * Migración: en versiones anteriores cada minero contratado vía
+     * CryptoEngine.hireMiners creaba un Employee individual con id que
+     * empezaba por "miner_". Eso reventaba el rendimiento con miles de
+     * mineros (cada tick recorría todos los empleados).
+     *
+     * Ahora los mineros son un agregado en `crypto.holdings[i].minersAssigned`.
+     * Esta función limpia los Employees legacy "miner_*" del save antiguo
+     * preservando el contador agregado (que ya estaba bien).
+     */
+    private fun migrateLegacyMinerEmployees(state: GameState): GameState {
+        val legacyMiners = state.company.employees.filter { it.id.startsWith("miner_") }
+        if (legacyMiners.isEmpty()) return state
+        val newEmployees = state.company.employees - legacyMiners.toSet()
+        val legacyIds = legacyMiners.map { it.id }.toSet()
+        val newProfiles = state.hrState.profiles.filterKeys { it !in legacyIds }
+        return state.copy(
+            company = state.company.copy(employees = newEmployees),
+            hrState = state.hrState.copy(profiles = newProfiles)
+        )
     }
 
     // ---------- Bridge ----------
@@ -512,6 +535,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun racingBuyTeam(teamId: String) = mutate { RacingEngine.buyTeam(it, teamId) }
     fun racingSellTeam() = mutate { RacingEngine.sellTeam(it) }
     fun racingUpgrade(part: RacingEngine.CarPart) = mutate { RacingEngine.upgradeCarPart(it, part) }
+    fun racingUpgradeMany(part: RacingEngine.CarPart, times: Int) =
+        mutate { RacingEngine.upgradeCarPartMany(it, part, times) }
     fun racingSignDriver(driverId: String, slot: Int) =
         mutate { RacingEngine.signDriver(it, driverId, slot) }
     fun racingFireDriver(slot: Int) = mutate { RacingEngine.fireDriver(it, slot) }

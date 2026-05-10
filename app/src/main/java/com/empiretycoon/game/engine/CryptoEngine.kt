@@ -247,6 +247,58 @@ object CryptoEngine {
                 rugpullsSurvived = s.crypto.rugpullsSurvived + survivedThisTick
             ))
         }
+
+        // 6) Nómina diaria de mineros agregados. Si no hay cash suficiente,
+        // se despiden mineros en cascada hasta que la nómina sea pagable.
+        val totalMinersBefore = totalMiners(s)
+        if (totalMinersBefore > 0) {
+            val dailyCost = totalMinersBefore * (MINER_MONTHLY_SALARY / 30.0)
+            if (s.company.cash >= dailyCost) {
+                s = s.copy(company = s.company.copy(cash = s.company.cash - dailyCost))
+            } else {
+                // Cash insuficiente: paga lo que pueda y despide proporcionalmente.
+                val dailyPerMiner = MINER_MONTHLY_SALARY / 30.0
+                val canPayFor = (s.company.cash / dailyPerMiner).toInt().coerceAtLeast(0)
+                val toFire = (totalMinersBefore - canPayFor).coerceAtLeast(0)
+                val payable = canPayFor * dailyPerMiner
+                // Repartir despidos proporcional a minersAssigned por token.
+                val firePerToken = HashMap<String, Int>()
+                var remaining = toFire
+                val sortedHoldings = s.crypto.holdings.sortedByDescending { it.minersAssigned }
+                for (h in sortedHoldings) {
+                    if (remaining <= 0) break
+                    val share = (toFire.toDouble() * h.minersAssigned / totalMinersBefore).toInt()
+                        .coerceAtMost(h.minersAssigned)
+                    firePerToken[h.symbol] = share
+                    remaining -= share
+                }
+                // Si quedan despidos por redondeo, ir quitando del primero.
+                if (remaining > 0) {
+                    val firstSym = sortedHoldings.firstOrNull()?.symbol
+                    if (firstSym != null) {
+                        firePerToken[firstSym] = (firePerToken[firstSym] ?: 0) + remaining
+                    }
+                }
+                val newHoldings = s.crypto.holdings.map { h ->
+                    val fired = firePerToken[h.symbol] ?: 0
+                    if (fired <= 0) h else h.copy(minersAssigned = (h.minersAssigned - fired).coerceAtLeast(0))
+                }
+                val n = GameNotification(
+                    id = System.nanoTime(),
+                    timestamp = System.currentTimeMillis(),
+                    kind = NotificationKind.WARNING,
+                    title = "💸 Despidos masivos de mineros",
+                    message = "$toFire mineros despedidos por impago. Pagaste " +
+                        "${"%,.0f".format(payable)} €. Te quedan ${totalMinersBefore - toFire} mineros."
+                )
+                s = s.copy(
+                    company = s.company.copy(cash = (s.company.cash - payable).coerceAtLeast(0.0)),
+                    crypto = s.crypto.copy(holdings = newHoldings),
+                    notifications = (s.notifications + n).takeLast(40)
+                )
+            }
+        }
+
         return s
     }
 
@@ -353,20 +405,33 @@ object CryptoEngine {
         )
     }
 
+    /**
+     * +1/-1 sobre el contador de mineros del token. PERF FIX: ya no consulta
+     * empleados de la empresa — los mineros son un agregado (Int) y no
+     * Employee individuales, así que escala a millones sin romper el motor.
+     *  - delta > 0: contrata UN minero nuevo si hay cash (cobra MINER_HIRE_COST).
+     *  - delta < 0: simplemente decrementa el contador (despido sin coste).
+     */
     fun assignMiners(state: GameState, symbol: String, delta: Int): GameState {
         if (!state.crypto.unlocked) return state
         val h = state.crypto.holdingOrEmpty(symbol)
-        val totalMiners = state.crypto.holdings.sumOf { it.minersAssigned }
-        val unassigned = state.company.employees.count { it.assignedBuildingId == null }
-        // Capacidad para AÑADIR mineros = empleados sin asignar - mineros que ya
-        // están minando (en otros tokens). Puede ser 0 o incluso negativa si la
-        // empresa quedó descuadrada por bugs previos. Importante: aún si la
-        // capacidad es 0, debemos permitir DECREMENTAR mineros existentes.
-        val addCapacity = max(0, unassigned - (totalMiners - h.minersAssigned))
-        val maxAllowed = max(h.minersAssigned, addCapacity)
-        val newCount = (h.minersAssigned + delta).coerceIn(0, maxAllowed)
-        val newH = h.copy(minersAssigned = newCount)
-        return state.copy(crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH)))
+        if (delta > 0) {
+            // Cada +1 cuesta MINER_HIRE_COST.
+            val canAfford = (state.company.cash / MINER_HIRE_COST).toInt()
+            val hireN = delta.coerceAtMost(canAfford)
+            if (hireN <= 0) return state
+            val totalCost = hireN * MINER_HIRE_COST
+            val newH = h.copy(minersAssigned = h.minersAssigned + hireN)
+            return state.copy(
+                company = state.company.copy(cash = state.company.cash - totalCost),
+                crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH))
+            )
+        } else if (delta < 0) {
+            val newCount = (h.minersAssigned + delta).coerceAtLeast(0)
+            val newH = h.copy(minersAssigned = newCount)
+            return state.copy(crypto = state.crypto.copy(holdings = upsertHolding(state.crypto.holdings, newH)))
+        }
+        return state
     }
 
     fun claimMining(state: GameState, symbol: String): GameState {
@@ -399,9 +464,11 @@ object CryptoEngine {
     }
 
     /**
-     * Contrata `count` empleados nuevos como mineros del token `symbol`.
-     * Crea Employee + EmployeeProfile (rol RAW_MATERIAL como placeholder),
-     * descuenta el coste de fichaje y los asigna directamente al mining.
+     * Contrata `count` mineros para el token `symbol`. PERF FIX: los mineros
+     * son un AGREGADO en `holding.minersAssigned` (Int), NO Employee individuales.
+     * Esto permite escalar a millones de mineros sin romper el motor (antes
+     * cada `groupBy {assignedBuildingId}` recorría todos los empleados cada
+     * tick, con miles de mineros eso bloqueaba la app).
      *
      * Si `count` excede el cash disponible, se ajusta a lo permitido.
      * Si count <= 0 o el cripto está bloqueado, retorna sin cambios.
@@ -423,42 +490,13 @@ object CryptoEngine {
         }
 
         val totalCost = hireN * MINER_HIRE_COST
-        val newEmployees = mutableListOf<Employee>()
-        val newProfiles = HashMap(state.hrState.profiles)
-        for (i in 0 until hireN) {
-            val empId = "miner_${state.tick}_${System.nanoTime()}_$i"
-            val emp = Employee(
-                id = empId,
-                name = "Minero #${state.company.employees.size + i + 1}",
-                skill = MINER_SKILL,
-                monthlySalary = MINER_MONTHLY_SALARY,
-                loyalty = 1.0,
-                assignedBuildingId = null
-            )
-            newEmployees += emp
-            // Perfil mínimo para que HrState/Payroll lo reconozca.
-            newProfiles[empId] = EmployeeProfile(
-                employeeId = empId,
-                role = EmployeeRole.LABORER,
-                level = 1,
-                xp = 0L,
-                traits = emptyList(),
-                education = Education.HIGHSCHOOL,
-                hiredAtTick = state.tick,
-                lastPromotionTick = state.tick
-            )
-        }
 
-        // Actualiza holding: súmale los mineros nuevos al token.
+        // Solo se actualiza el contador del token — sin Employees individuales.
         val curHolding = state.crypto.holdingOrEmpty(symbol)
         val newH = curHolding.copy(minersAssigned = curHolding.minersAssigned + hireN)
         val newHoldings = upsertHolding(state.crypto.holdings, newH)
 
-        val newCompany = state.company.copy(
-            cash = state.company.cash - totalCost,
-            employees = state.company.employees + newEmployees
-        )
-        val newHr = state.hrState.copy(profiles = newProfiles)
+        val newCompany = state.company.copy(cash = state.company.cash - totalCost)
 
         val expectedDailyTokens = if (def.miningDifficulty > 0)
             hireN.toDouble() / def.miningDifficulty else 0.0
@@ -466,16 +504,23 @@ object CryptoEngine {
         return notify(
             state.copy(
                 company = newCompany,
-                hrState = newHr,
                 crypto = state.crypto.copy(holdings = newHoldings)
             ),
             NotificationKind.SUCCESS,
             "⛏️ +$hireN mineros contratados (${def.symbol})",
             "Coste de fichaje: ${"%,.0f".format(totalCost)} €. " +
-                "Sueldo mensual: ${"%,.0f".format(hireN * MINER_MONTHLY_SALARY)} €. " +
+                "Nómina mensual: ${"%,.0f".format(hireN * MINER_MONTHLY_SALARY)} €. " +
                 "Producción esperada: ${"%,.4f".format(expectedDailyTokens)} ${def.symbol}/día."
         )
     }
+
+    /** Total de mineros agregados en todos los tokens. */
+    fun totalMiners(state: GameState): Int =
+        state.crypto.holdings.sumOf { it.minersAssigned }
+
+    /** Coste DIARIO total de la nómina de mineros agregados. */
+    fun dailyMinerPayroll(state: GameState): Double =
+        totalMiners(state) * (MINER_MONTHLY_SALARY / 30.0)
 
     /**
      * Atajo "gasta todo el cash en mineros para este token". Calcula el

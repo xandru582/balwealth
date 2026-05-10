@@ -212,11 +212,12 @@ private fun CarStatRow(
 ) {
     val cost = part.baseCost * (1.0 + level * 0.05)
     val canAfford = state.company.cash >= cost
+    val maxed = level >= 99
     Row(
         Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Paper, modifier = Modifier.weight(1f))
+        Text(label, color = Paper, modifier = Modifier.weight(1f), fontSize = 12.sp)
         // Barra de nivel
         Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(InkBorder)) {
             Box(
@@ -227,18 +228,44 @@ private fun CarStatRow(
         }
         Spacer(Modifier.width(6.dp))
         Text("$level", color = Gold, fontWeight = FontWeight.Bold, modifier = Modifier.width(28.dp))
-        Spacer(Modifier.width(6.dp))
-        TextButton(
+    }
+    // Botones grandes en una nueva fila (mejor UX)
+    Row(
+        Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            if (maxed) "MAX" else "Mejora: ${"%,.0f".format(cost)} €",
+            color = if (maxed) Gold else if (canAfford) Dim else Ruby,
+            fontSize = 11.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Button(
             onClick = { vm.racingUpgrade(part) },
-            enabled = canAfford && level < 99,
-            colors = ButtonDefaults.textButtonColors(contentColor = if (canAfford) Emerald else Dim)
+            enabled = canAfford && !maxed,
+            modifier = Modifier.height(32.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Emerald, contentColor = Ink,
+                disabledContainerColor = InkBorder, disabledContentColor = Dim
+            )
         ) {
-            Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(if (maxed) "MAX" else "+1", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        }
+        Spacer(Modifier.width(6.dp))
+        Button(
+            onClick = { vm.racingUpgradeMany(part, 10) },
+            enabled = canAfford && !maxed,
+            modifier = Modifier.height(32.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Gold, contentColor = Ink,
+                disabledContainerColor = InkBorder, disabledContentColor = Dim
+            )
+        ) {
+            Text("+10", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
     }
-    Text("Coste mejora: ${"%,.0f".format(cost)} €",
-        color = Dim, fontSize = 10.sp,
-        modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
 }
 
 @Composable

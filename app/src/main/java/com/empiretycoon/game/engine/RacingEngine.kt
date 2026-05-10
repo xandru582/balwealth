@@ -111,7 +111,8 @@ object RacingEngine {
     /** Mejora la parte indicada en +3..+5 (escalado por nivel actual). */
     fun upgradeCarPart(state: GameState, part: CarPart): GameState {
         val r = state.racing
-        val team = r.ownedTeam() ?: return state
+        val team = r.ownedTeam() ?: return notify(state, NotificationKind.WARNING,
+            "Sin equipo", "Compra primero un equipo en la pestaña Pilotos/Mercado.")
         val car = team.car
         val level = when (part) {
             CarPart.ENGINE -> car.engine
@@ -120,11 +121,11 @@ object RacingEngine {
             CarPart.TYRES -> car.tyres
         }
         if (level >= 99) return notify(state, NotificationKind.WARNING,
-            "Ya está al máximo", "${part.displayName} no puede mejorarse más.")
+            "Ya está al máximo", "${part.displayName} no puede mejorarse más (99/100).")
         // Cuanto más alto el nivel, más caro
         val cost = part.baseCost * (1.0 + level * 0.05)
         if (state.company.cash < cost) return notify(state, NotificationKind.ERROR,
-            "Sin fondos", "Necesitas ${"%,.0f".format(cost)} €.")
+            "Sin fondos", "Necesitas ${"%,.0f".format(cost)} € para mejorar ${part.displayName} (tienes ${"%,.0f".format(state.company.cash)} €).")
         val gain = (5 - level / 25).coerceAtLeast(2)
         val newCar = when (part) {
             CarPart.ENGINE -> car.copy(engine = (car.engine + gain).coerceAtMost(99))
@@ -139,13 +140,34 @@ object RacingEngine {
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.SUCCESS,
             title = "🔧 ${part.displayName} mejorada (+$gain)",
-            message = "Coste: ${"%,.0f".format(cost)} €. Nuevo nivel: ${level + gain}."
+            message = "Coste: ${"%,.0f".format(cost)} €. Nuevo nivel: ${level + gain}/100."
         )
         return state.copy(
             company = state.company.copy(cash = state.company.cash - cost),
             racing = r.copy(teams = newTeams),
             notifications = (state.notifications + n).takeLast(40)
         )
+    }
+
+    /** Aplica `times` mejoras consecutivas (uso x10 en la UI). */
+    fun upgradeCarPartMany(state: GameState, part: CarPart, times: Int): GameState {
+        var s = state
+        for (i in 0 until times) {
+            val r = s.racing
+            val team = r.ownedTeam() ?: return s
+            val car = team.car
+            val level = when (part) {
+                CarPart.ENGINE -> car.engine
+                CarPart.AERO -> car.aero
+                CarPart.RELIABILITY -> car.reliability
+                CarPart.TYRES -> car.tyres
+            }
+            if (level >= 99) break
+            val cost = part.baseCost * (1.0 + level * 0.05)
+            if (s.company.cash < cost) break
+            s = upgradeCarPart(s, part)
+        }
+        return s
     }
 
     /** Contratar piloto al equipo del jugador en slot 1 ó 2. */
