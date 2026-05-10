@@ -79,6 +79,7 @@ private fun GarageCarCard(car: OwnedCar, state: GameState, vm: GameViewModel) {
     val model = car.model()
     val isCurrent = state.garage.currentlyDrivingId == car.instanceId
     var showColors by remember(car.instanceId) { mutableStateOf(false) }
+    var confirmSell by remember(car.instanceId) { mutableStateOf(false) }
 
     EmpireCard(borderColor = if (isCurrent) Emerald else InkBorder) {
         Column {
@@ -134,7 +135,7 @@ private fun GarageCarCard(car: OwnedCar, state: GameState, vm: GameViewModel) {
                 ) { Text("🎨 500€", fontSize = 12.sp) }
                 Spacer(Modifier.width(4.dp))
                 TextButton(
-                    onClick = { vm.sellCar(car.instanceId) }
+                    onClick = { confirmSell = true }
                 ) { Text("Vender", color = Ruby, fontSize = 12.sp) }
             }
             if (showColors) {
@@ -159,5 +160,32 @@ private fun GarageCarCard(car: OwnedCar, state: GameState, vm: GameViewModel) {
                 }
             }
         }
+    }
+
+    if (confirmSell) {
+        val refund = (model.price * 0.7).toLong()
+        AlertDialog(
+            onDismissRequest = { confirmSell = false },
+            title = { Text("¿Vender ${model.displayName}?") },
+            text = {
+                Text(
+                    "Recuperarás aproximadamente $refund € (70% del precio). " +
+                        "Esta acción NO se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.sellCar(car.instanceId)
+                    confirmSell = false
+                }) {
+                    Text("Vender", color = Ruby, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSell = false }) {
+                    Text("Cancelar", color = Dim)
+                }
+            }
+        )
     }
 }

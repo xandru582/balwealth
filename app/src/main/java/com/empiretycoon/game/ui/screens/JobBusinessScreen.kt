@@ -105,6 +105,7 @@ private fun BusinessActiveView(
     val baseWage = job.baseHourlyWage
     val hourlyRev = biz.hourlyRevenue(baseWage)
     val dailySalaries = biz.dailySalaries(baseWage)
+    var confirmClose by remember(job) { mutableStateOf(false) }
 
     // Header con treasury + KPIs
     EmpireCard(borderColor = Gold) {
@@ -221,11 +222,39 @@ private fun BusinessActiveView(
         )
         Spacer(Modifier.height(6.dp))
         TextButton(
-            onClick = { vm.jobBusinessClose(job) },
+            onClick = { confirmClose = true },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Cerrar empresa", color = Color(0xFFFF7A7A), fontWeight = FontWeight.Bold)
         }
+    }
+
+    if (confirmClose) {
+        AlertDialog(
+            onDismissRequest = { confirmClose = false },
+            title = { Text("¿Cerrar ${job.displayName}?") },
+            text = {
+                Text(
+                    "Recibirás ${refund.fmtMoney()} (refund + treasury) y pagarás " +
+                        "${severance.fmtMoney()} en indemnizaciones. " +
+                        "Resultado neto: ${if (net >= 0) "+" else ""}${net.fmtMoney()}. " +
+                        "\n\nEsta acción NO se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.jobBusinessClose(job)
+                    confirmClose = false
+                }) {
+                    Text("Cerrar empresa", color = Color(0xFFFF7A7A), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClose = false }) {
+                    Text("Cancelar", color = Dim)
+                }
+            }
+        )
     }
 }
 

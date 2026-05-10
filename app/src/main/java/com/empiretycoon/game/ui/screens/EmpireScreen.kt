@@ -82,6 +82,7 @@ private fun BuildingsTab(state: GameState, vm: GameViewModel) {
 @Composable
 private fun BuildingCard(b: Building, state: GameState, vm: GameViewModel) {
     var pickRecipe by remember(b.id) { mutableStateOf(false) }
+    var confirmDemolish by remember(b.id) { mutableStateOf(false) }
     val recipe = b.currentRecipeId?.let { AdvancedRecipeCatalog.byId(it) }
     val frac = if (recipe == null) 0f
         else (b.progressSeconds / recipe.seconds.toDouble()).toFloat()
@@ -146,7 +147,7 @@ private fun BuildingCard(b: Building, state: GameState, vm: GameViewModel) {
             TextButton(onClick = { vm.toggleAutoRestart(b.id) }) {
                 Text(if (b.autoRestart) "Auto ON" else "Auto OFF", color = Dim)
             }
-            TextButton(onClick = { vm.demolish(b.id) }) {
+            TextButton(onClick = { confirmDemolish = true }) {
                 Text("Vender", color = Ruby)
             }
         }
@@ -165,6 +166,34 @@ private fun BuildingCard(b: Building, state: GameState, vm: GameViewModel) {
                 pickRecipe = false
             },
             onClose = { pickRecipe = false }
+        )
+    }
+
+    if (confirmDemolish) {
+        val refund = b.type.baseCost * 0.3 * b.level
+        AlertDialog(
+            onDismissRequest = { confirmDemolish = false },
+            title = { Text("¿Vender ${b.name}?") },
+            text = {
+                Text(
+                    "Recuperarás ${refund.fmtMoney()} (30% del coste por nivel). " +
+                        "Los empleados quedarán sin asignar y la receta se pierde. " +
+                        "Esta acción NO se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.demolish(b.id)
+                    confirmDemolish = false
+                }) {
+                    Text("Vender", color = Ruby, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDemolish = false }) {
+                    Text("Cancelar", color = Dim)
+                }
+            }
         )
     }
 }

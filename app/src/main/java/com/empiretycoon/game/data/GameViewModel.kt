@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -100,9 +101,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         gameLoop = viewModelScope.launch {
             while (true) {
                 delay(1_000L)
-                val s = _state.value
-                if (!s.paused) {
-                    _state.value = GameEngine.advanceSeconds(s, s.speedMultiplier.toLong())
+                // FIX P0: usa CAS para que el loop NO pise mutaciones del
+                // usuario que ocurran entre tick y tick. update { } reintenta
+                // si el estado cambió mientras se procesaba el bloque.
+                _state.update { s ->
+                    if (s.paused) s
+                    else GameEngine.advanceSeconds(s, s.speedMultiplier.toLong())
                 }
             }
         }
@@ -150,11 +154,23 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Bridge ----------
 
+    /**
+     * FIX P0: atomicidad de mutaciones.
+     *
+     * Antes era read-modify-write: `prev = _state.value; _state.value = block(prev)`.
+     * Si entre lectura y escritura el `gameLoop` (cada 1s) avanzaba el estado,
+     * la escritura del usuario PISABA el estado nuevo del loop = lost update.
+     *
+     * Ahora usa `MutableStateFlow.update { }` que es CAS (compare-and-set):
+     * si entre la lectura y la escritura otro hilo cambió el estado, reintenta
+     * con el nuevo. El bloque debe ser puro/idempotente (lo es: todos los
+     * engines son `GameState -> GameState` sin side-effects).
+     */
     private fun mutate(block: (GameState) -> GameState) {
-        val prev = _state.value
-        val next = block(prev)
-        // Avance de tutorial tras cada acción del jugador
-        _state.value = TutorialEngine.checkAdvance(prev, next)
+        _state.update { prev ->
+            val next = block(prev)
+            TutorialEngine.checkAdvance(prev, next)
+        }
     }
 
     // ---- Núcleo (básicos) ----
@@ -352,13 +368,14 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- Mundo 2D / BalWealth ----
     fun applyWorldMove(dx: Float, dy: Float, deltaSec: Float) {
-        val s = _state.value
-        // Si conduce, multiplica la velocidad por el topSpeed del coche
-        val speed = 4.5f * com.empiretycoon.game.engine.DrivingEngine.speedMultiplier(s)
-        val w = com.empiretycoon.game.world.MovementEngine.applyMovement(
-            s.world, com.empiretycoon.game.world.MoveInput(dx, dy), deltaSec, speed
-        )
-        if (w !== s.world) _state.value = s.copy(world = w)
+        // FIX P0: CAS para no pisar otras mutaciones (gameLoop, acciones del usuario).
+        _state.update { s ->
+            val speed = 4.5f * com.empiretycoon.game.engine.DrivingEngine.speedMultiplier(s)
+            val w = com.empiretycoon.game.world.MovementEngine.applyMovement(
+                s.world, com.empiretycoon.game.world.MoveInput(dx, dy), deltaSec, speed
+            )
+            if (w !== s.world) s.copy(world = w) else s
+        }
     }
     fun updateAvatarLook(look: com.empiretycoon.game.world.AvatarLook) = mutate {
         it.copy(world = it.world.copy(avatar = it.world.avatar.copy(look = look)))

@@ -10,11 +10,14 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        // applicationId se mantiene como "com.empiretycoon.game" para no
+        // romper la actualización a usuarios existentes. El branding visible
+        // (label, app_name, lock-screen) usa "BalWealth" via strings.xml.
         applicationId = "com.empiretycoon.game"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         vectorDrawables { useSupportLibrary = true }
     }
 

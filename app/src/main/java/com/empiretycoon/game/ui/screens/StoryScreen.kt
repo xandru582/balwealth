@@ -205,8 +205,7 @@ private fun ChapterRow(ch: StoryChapter, state: GameState) {
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    if (locked) "??? ${ch.title.take(0)}".trim() + "Capítulo bloqueado"
-                    else ch.title,
+                    if (locked) "??? Capítulo bloqueado" else ch.title,
                     fontWeight = FontWeight.Bold,
                     color = if (locked) Dim else Paper
                 )

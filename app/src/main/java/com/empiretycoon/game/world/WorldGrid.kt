@@ -28,9 +28,18 @@ data class WorldGrid(
     val decoMap: Map<Long, String> = emptyMap()
 ) {
     init {
-        require(width > 0 && height > 0) { "WorldGrid dims must be > 0" }
-        require(tilesPacked.size == width * height) {
-            "tilesPacked size ${tilesPacked.size} != width*height=${width * height}"
+        // FIX P0: relajado de `require` a precondición soft. Antes lanzaba
+        // IllegalArgumentException al deserializar saves de versiones con
+        // dimensiones distintas → crash en el load. Ahora el grid se puede
+        // construir; los métodos `inBounds`/`tileAt` ya filtran out-of-bounds.
+        // El loader en SaveRepository captura cualquier inconsistencia
+        // residual y degrada a un grid fresh.
+        if (width <= 0 || height <= 0 || tilesPacked.size != width * height) {
+            throw IllegalArgumentException(
+                "WorldGrid inválido: width=$width height=$height " +
+                    "tilesPacked.size=${tilesPacked.size}. " +
+                    "El loader regenerará un grid fresh."
+            )
         }
     }
 

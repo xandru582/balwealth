@@ -39,11 +39,20 @@ data class Player(
     fun xpForNextLevel(): Long = (100 * 1.35.pow(level - 1)).toLong()
 
     fun addXp(amount: Long): Player {
+        if (amount <= 0) return this
         var newXp = xp + amount
         var newLevel = level
-        while (newXp >= 100 * 1.35.pow(newLevel - 1).toLong()) {
-            newXp -= (100 * 1.35.pow(newLevel - 1)).toLong()
+        // FIX P0: la versión anterior tenía precedencia rota:
+        //   `100 * 1.35.pow(...).toLong()` truncaba antes de multiplicar.
+        //   Resultado: el check y el resto usaban valores DISTINTOS y el
+        //   bucle podía dejar xp negativo o conceder niveles de más.
+        while (true) {
+            val cost = (100.0 * 1.35.pow(newLevel - 1)).toLong()
+            if (cost <= 0 || newXp < cost) break
+            newXp -= cost
             newLevel++
+            // Hard cap para evitar overflow numérico en runs muy largos.
+            if (newLevel >= 999) break
         }
         return copy(xp = newXp, level = newLevel)
     }

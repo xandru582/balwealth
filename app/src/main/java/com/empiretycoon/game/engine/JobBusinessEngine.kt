@@ -251,8 +251,15 @@ object JobBusinessEngine {
         )
 
         // 2) Si cambió el día, pagar salarios
+        // FIX P0: cap simétrico al offline (24h = 1 día). Sin esto, si el
+        // jugador deja la app cerrada 5 días, se cobra revenue de 1 día
+        // pero salarios de 5 → balance roto en su contra. El cap
+        // OFFLINE_CAP_TICKS = 1440 ticks = 1 día, así que pagamos máximo
+        // 1 día de nómina si el jugador estuvo días sin abrir.
         if (state.day > newBiz.lastPayrollDay) {
-            val daysToPay = (state.day - newBiz.lastPayrollDay).coerceAtLeast(1)
+            val rawDaysToPay = (state.day - newBiz.lastPayrollDay).coerceAtLeast(1)
+            val maxDaysFromCap = (JobBusinessCatalog.OFFLINE_CAP_TICKS / 1_440L).toInt().coerceAtLeast(1)
+            val daysToPay = rawDaysToPay.coerceAtMost(maxDaysFromCap)
             // Pagamos 1 día de salarios; si pasaron varios días offline, pagamos
             // por cada día (proporcional). Treasury puede acabar negativo si
             // los empleados son caros — entonces los desbandamos en orden de

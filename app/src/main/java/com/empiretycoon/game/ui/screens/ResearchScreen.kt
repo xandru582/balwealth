@@ -37,8 +37,10 @@ fun ResearchScreen(state: GameState, vm: GameViewModel) {
                 if (tech != null) {
                     Spacer(Modifier.height(10.dp))
                     Text("En curso: ${tech.name}", color = Emerald, fontWeight = FontWeight.Bold)
-                    val frac = 1f - (state.research.inProgressSecondsLeft
-                        / tech.researchSeconds.toDouble()).toFloat()
+                    // Guard contra división por cero si researchSeconds es 0/inválido.
+                    val totalSec = tech.researchSeconds.toDouble().coerceAtLeast(1.0)
+                    val frac = (1f - (state.research.inProgressSecondsLeft / totalSec).toFloat())
+                        .coerceIn(0f, 1f)
                     ProgressBarWithLabel(frac,
                         label = "${state.research.inProgressSecondsLeft.toInt()}s restantes",
                         color = Emerald)

@@ -65,7 +65,9 @@ data class SideQuest(
     /** Snapshot del estado al aceptar para medir progreso relativo. */
     val baselineCash: Double = 0.0,
     val baselineDay: Int = 0,
-    val baselineSold: Map<String, Int> = emptyMap()
+    val baselineSold: Map<String, Int> = emptyMap(),
+    /** Snapshot de contratos completados al aceptar (para CompleteContracts). */
+    val baselineContractsCompleted: Int = 0
 )
 
 @Serializable
@@ -74,6 +76,8 @@ data class SideQuestsState(
     val available: List<SideQuest> = emptyList(),
     val completed: Set<String> = emptySet(),
     val failed: Set<String> = emptySet(),
+    /** Misiones cuya recompensa YA fue cobrada — bloquea doble cobro. */
+    val claimedRewards: Set<String> = emptySet(),
     /** Día in-game en que se hizo el último refresh para no saturar. */
     val lastRefreshDay: Int = 0
 )

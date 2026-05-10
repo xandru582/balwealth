@@ -67,9 +67,40 @@ object ProductionLinesEngine {
         ).let { applyLineRecipes(it, line) }
     }
 
-    /** Habilita o deshabilita una línea. Si se deshabilita, se respeta lo que tenían. */
-    fun toggleLine(state: GameState, lineId: String): GameState =
-        state.copy(productionLines = state.productionLines.toggle(lineId))
+    /**
+     * Habilita o deshabilita una línea.
+     *
+     * FIX P0: cuando se desactiva, libera los empleados asignados a los
+     * edificios de la línea (assignedWorkers = 0 + assignedBuildingId = null
+     * en cada Employee de esos buildings) para que NO queden "fantasmas"
+     * bloqueando otras recetas. La receta del edificio NO se cambia, así
+     * que al re-activar todo arranca igual donde lo dejaste.
+     */
+    fun toggleLine(state: GameState, lineId: String): GameState {
+        val line = state.productionLines.lines.find { it.id == lineId }
+            ?: return state
+        val toggledState = state.copy(productionLines = state.productionLines.toggle(lineId))
+        // Si la línea queda deshabilitada tras el toggle, liberamos workers.
+        val nowEnabled = toggledState.productionLines.lines.find { it.id == lineId }?.enabled
+            ?: return toggledState
+        if (nowEnabled) return toggledState
+
+        val lineBuildingIds = line.recipeIdsPerBuilding.keys
+        if (lineBuildingIds.isEmpty()) return toggledState
+
+        val newBuildings = toggledState.company.buildings.map { b ->
+            if (b.id in lineBuildingIds) b.copy(assignedWorkers = 0) else b
+        }
+        val newEmployees = toggledState.company.employees.map { e ->
+            if (e.assignedBuildingId in lineBuildingIds) e.copy(assignedBuildingId = null) else e
+        }
+        return toggledState.copy(
+            company = toggledState.company.copy(
+                buildings = newBuildings,
+                employees = newEmployees
+            )
+        )
+    }
 
     /** Borra la línea (no toca recetas asignadas — el jugador puede dejarlas). */
     fun deleteLine(state: GameState, lineId: String): GameState =

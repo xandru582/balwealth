@@ -36,11 +36,16 @@ data class Company(
     fun xpForNextLevel(): Long = (500 * Math.pow(1.5, (level - 1).toDouble())).toLong()
 
     fun addXp(amount: Long): Company {
+        if (amount <= 0) return this
         var xpNew = xp + amount
         var lvlNew = level
-        while (xpNew >= (500 * Math.pow(1.5, (lvlNew - 1).toDouble())).toLong()) {
-            xpNew -= (500 * Math.pow(1.5, (lvlNew - 1).toDouble())).toLong()
+        while (true) {
+            val cost = (500 * Math.pow(1.5, (lvlNew - 1).toDouble())).toLong()
+            if (cost <= 0 || xpNew < cost) break
+            xpNew -= cost
             lvlNew++
+            // Hard cap para evitar overflow en runs muy largos.
+            if (lvlNew >= 999) break
         }
         return copy(xp = xpNew, level = lvlNew)
     }

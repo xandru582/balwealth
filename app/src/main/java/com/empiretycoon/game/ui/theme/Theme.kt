@@ -54,11 +54,14 @@ private val Light = lightColorScheme(
 
 @Composable
 fun EmpireTheme(
-    dark: Boolean = isSystemInDarkTheme(),
+    @Suppress("UNUSED_PARAMETER") dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    // Decisión de diseño: BalWealth siempre usa modo oscuro estilo tycoon.
+    // El parámetro `dark` se mantiene por compatibilidad de signatura; el
+    // esquema Light queda definido por si en el futuro se ofrece opción.
     MaterialTheme(
-        colorScheme = if (dark) Dark else Dark, // siempre oscuro, estilo tycoon
+        colorScheme = Dark,
         typography = EmpireTypography,
         content = content
     )

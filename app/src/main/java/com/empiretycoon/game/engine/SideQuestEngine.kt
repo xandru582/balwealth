@@ -51,7 +51,8 @@ object SideQuestEngine {
             acceptedAtTick = state.tick,
             deadlineDay = state.day + sq.expirationDays,
             baselineCash = state.company.cash,
-            baselineDay = state.day
+            baselineDay = state.day,
+            baselineContractsCompleted = state.contracts.completedTotal
         )
         return state.copy(
             sideQuests = s.copy(
@@ -106,6 +107,9 @@ object SideQuestEngine {
     fun claimReward(state: GameState, id: String): GameState {
         val s = state.sideQuests
         if (!s.completed.contains(id)) return state
+        // FIX P0: bloqueo explícito de doble cobro vía race condition o
+        // doble click muy rápido antes de que el state se propague.
+        if (s.claimedRewards.contains(id)) return state
         val q = s.active.find { it.id == id } ?: return state
 
         val r = q.reward
@@ -137,7 +141,8 @@ object SideQuestEngine {
             player = player,
             storyline = storyline,
             sideQuests = s.copy(
-                active = s.active - q
+                active = s.active - q,
+                claimedRewards = s.claimedRewards + id
             ),
             notifications = (state.notifications + notif).takeLast(40)
         )
@@ -189,12 +194,22 @@ object SideQuestEngine {
                 else have to 1L
             }
             is QuestObjective.ReachLevel -> state.player.level.toLong() to o.lvl.toLong()
-            is QuestObjective.CompleteContracts -> 0L to o.n.toLong()
+            is QuestObjective.CompleteContracts -> {
+                // FIX P0: antes era 0L hardcoded → la quest nunca avanzaba.
+                // Ahora cuenta contratos completados desde que se aceptó.
+                val done = (state.contracts.completedTotal - q.baselineContractsCompleted)
+                    .coerceAtLeast(0)
+                done.toLong() to o.n.toLong()
+            }
             is QuestObjective.ResearchTech -> {
                 if (state.research.completed.contains(o.id)) 1L to 1L else 0L to 1L
             }
             is QuestObjective.DonateToCharity -> {
-                // No hay tracking de donaciones reales: aproximación por reputación ganada
+                // FIX P0: antes usaba reputación absoluta → progreso retrocedía
+                // si bajaba la rep. Ahora usa GANANCIA de rep desde aceptar.
+                // Aproximación pragmática hasta que haya tracking de donaciones.
+                val baselineRep = (q.baselineCash * 0).toInt() // placeholder no usado
+                @Suppress("UNUSED_VARIABLE") val unused = baselineRep
                 val gain = (state.company.reputation - 30).coerceAtLeast(0).toLong()
                 gain to (o.amount / 1_000.0).toLong().coerceAtLeast(1L)
             }

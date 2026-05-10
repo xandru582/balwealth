@@ -30,10 +30,16 @@ object RivalEngine {
         if (state.rivals.active.isEmpty()) return state
         val playerCash = state.company.cash
         val active = state.rivals.active
-        val justDefeated = active.filter { !it.defeated && playerCash >= it.cash }
+        // Defensa contra doble cobro tras HostileTakeover: si el rival ya
+        // está en `defeated` (mismo id), no se procesa aunque siga en `active`
+        // por algún bug residual.
+        val defeatedIds = state.rivals.defeated.map { it.id }.toHashSet()
+        val justDefeated = active.filter {
+            !it.defeated && it.id !in defeatedIds && playerCash >= it.cash
+        }
         if (justDefeated.isEmpty()) return state.copy(
             rivals = state.rivals.copy(
-                currentChallenge = pickNextChallenge(active.filter { !it.defeated })
+                currentChallenge = pickNextChallenge(active.filter { !it.defeated && it.id !in defeatedIds })
             )
         )
 
