@@ -343,7 +343,8 @@ enum class JobId(
             TAXI_DRIVER, CAR_MECHANIC, PROGRAMMER, DETECTIVE,
             BOXER, FISHERMAN, FOOTBALL_PLAYER, STREAMER,
             PAINTER, PHARMACIST, TEACHER, FARMER,
-            LIBRARIAN, DENTIST, POSTMAN, ICE_CREAM_SELLER -> true
+            LIBRARIAN, DENTIST, POSTMAN, ICE_CREAM_SELLER,
+            PARAMEDIC, K9_OFFICER, ACTOR -> true
             else -> false
         }
 }

@@ -21,6 +21,7 @@ import com.empiretycoon.game.engine.JobsEngine
 import com.empiretycoon.game.model.*
 import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.SectionTitle
+import com.empiretycoon.game.ui.screens.jobs.ActorJobScreen
 import com.empiretycoon.game.ui.screens.jobs.BakerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.BoxerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ChefJobScreen
@@ -31,9 +32,11 @@ import com.empiretycoon.game.ui.screens.jobs.FootballJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DentistJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FarmerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.IceCreamJobScreen
+import com.empiretycoon.game.ui.screens.jobs.K9JobScreen
 import com.empiretycoon.game.ui.screens.jobs.LibrarianJobScreen
 import com.empiretycoon.game.ui.screens.jobs.MechanicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PainterJobScreen
+import com.empiretycoon.game.ui.screens.jobs.ParamedicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PharmacistJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PostmanJobScreen
@@ -90,6 +93,9 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.DENTIST -> DentistJobScreen(state, onFinish, onCancel)
             JobId.POSTMAN -> PostmanJobScreen(state, onFinish, onCancel)
             JobId.ICE_CREAM_SELLER -> IceCreamJobScreen(state, onFinish, onCancel)
+            JobId.PARAMEDIC -> ParamedicJobScreen(state, onFinish, onCancel)
+            JobId.K9_OFFICER -> K9JobScreen(state, onFinish, onCancel)
+            JobId.ACTOR -> ActorJobScreen(state, onFinish, onCancel)
             else -> { activeMiniJob = null }  // safety: no debería ocurrir
         }
         return
