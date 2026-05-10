@@ -99,6 +99,8 @@ private val SubScreens = listOf(
     SubScreen("heists", "Inframundo (heists)", "🦹", "Atracos planificados con tripulación y heat"),
     SubScreen("companion", "Asistente IA", "🤖", "Tips priorizados sobre tu situación: nóminas, riesgos, oportunidades"),
     SubScreen("multicity", "Imperio global", "🌐", "5 ciudades + rutas + aranceles + envíos internacionales"),
+    SubScreen("arcade", "Arcade", "🎮", "Mini-juegos jugables con apuestas: Serpiente jugable, otros próximamente"),
+    SubScreen("seasons", "Temporadas", "🎭", "Halloween · Navidad · Año Nuevo · Verano — bonos rotatorios"),
     SubScreen("settings", "Ajustes", "⚙️", "Audio, velocidad, partida")
 )
 
@@ -482,6 +484,8 @@ private fun SubScreenHost(
                 "heists" -> HeistsScreen(state, vm)
                 "companion" -> CompanionScreen(state, vm)
                 "multicity" -> MultiCityScreen(state, vm)
+                "arcade" -> ArcadeScreen(state, vm)
+                "seasons" -> SeasonsScreen(state, vm)
                 "settings" -> MoreScreen(state, vm)
             }
         }

@@ -572,4 +572,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         mutate { MultiCityEngine.closeRoute(it, routeId) }
     fun multiCityShip(routeId: String, resourceId: String, qty: Int) =
         mutate { MultiCityEngine.ship(it, routeId, resourceId, qty) }
+
+    // ===================== v17 — Arcade =====================
+    fun arcadeUnlock() = mutate { ArcadeEngine.unlock(it) }
+    fun arcadeSelectBet(bet: Double) = mutate { ArcadeEngine.selectBet(it, bet) }
+    fun arcadePlaceBet(game: ArcadeGameId, bet: Double) =
+        mutate { ArcadeEngine.placeBet(it, game, bet) }
+    fun arcadeFinishPlay(game: ArcadeGameId, bet: Double, score: Int, winnings: Double) =
+        mutate { ArcadeEngine.finishPlay(it, game, bet, score, winnings) }
 }

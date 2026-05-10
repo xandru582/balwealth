@@ -379,6 +379,11 @@ object GameEngine {
             s2 = MultiCityEngine.tickDaily(s2, rng)
         }
 
+        // 30) Event Seasons: rota la temporada activa al cambio de día.
+        if (nextTick % 1_440L == 0L) {
+            s2 = SeasonsEngine.tickDaily(s2)
+        }
+
         return s2
     }
 

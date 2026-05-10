@@ -149,7 +149,13 @@ data class GameState(
     val aiCompanion: AICompanionState = AICompanionState(),
 
     /** v17 — Comercio internacional con 5 ciudades. */
-    val multiCity: MultiCityState = MultiCityCatalog.freshState()
+    val multiCity: MultiCityState = MultiCityCatalog.freshState(),
+
+    /** v17 — Arcade con mini-juegos jugables y apuestas. */
+    val arcade: ArcadeState = ArcadeState(),
+
+    /** v17 — Temporadas y festivales rotatorios. */
+    val seasons: SeasonsState = SeasonsState()
 ) {
     val day: Int get() = (tick / 1_440).toInt() + 1
     val hourOfDay: Int get() = ((tick % 1_440) / 60).toInt()
