@@ -411,7 +411,14 @@ object SkyEngine {
 // =====================================================================
 
 object ShadowEngine {
-    /** Dibuja sombra elíptica de un objeto en (screenX, screenY) según ángulo solar. */
+    /**
+     * Sombras blandas con PCF poor-man's: en vez de una elipse dura, dibuja
+     * 5 elipses con offsets sub-pixel y alpha decreciente desde el centro.
+     * Resultado: bordes difuminados sin coste GPU extra (mismas drawCalls
+     * por objeto, sólo 5× drawArc baratos).
+     *
+     * Distribución (cross + center): centro pleno + N/S/E/W con alpha 0.4×.
+     */
     fun DrawScope.drawObjectShadow(
         screenX: Float,
         screenY: Float,
@@ -425,13 +432,32 @@ object ShadowEngine {
         val len = radiusPx * (1.5f + (1f - sunHigh) * 2.5f)
         val offsetX = -cos(sunAngle.toDouble()).toFloat() * len * 0.5f
         val offsetY = (1f - sunHigh) * radiusPx * 0.6f + radiusPx * 0.3f
-        // Elipse aplastada usando arc 360
-        drawArc(
-            color = Color(0x44000000).copy(alpha = 0.25f * ambient),
-            startAngle = 0f, sweepAngle = 360f, useCenter = true,
-            topLeft = Offset(screenX + offsetX - len / 2f, screenY + offsetY - radiusPx * 0.3f),
-            size = Size(len, radiusPx * 0.6f)
+
+        val baseAlpha = 0.25f * ambient
+        val ellipseW = len
+        val ellipseH = radiusPx * 0.6f
+        val cx = screenX + offsetX
+        val cy = screenY + offsetY
+        val pcfStep = (radiusPx * 0.18f).coerceAtLeast(1f)
+
+        // Centro (alpha pleno) + 4 samples cruzados (alpha 0.40×). Con los 5
+        // pintados aditivamente con copy(alpha) sobre transparente, el ojo
+        // percibe un edge graduado sin coste real.
+        val samples = arrayOf(
+            Triple(0f, 0f, 1.00f),
+            Triple(-pcfStep, 0f, 0.40f),
+            Triple(pcfStep, 0f, 0.40f),
+            Triple(0f, -pcfStep, 0.40f),
+            Triple(0f, pcfStep, 0.40f)
         )
+        for ((dx, dy, mul) in samples) {
+            drawArc(
+                color = Color(0x44000000).copy(alpha = baseAlpha * mul * 0.55f),
+                startAngle = 0f, sweepAngle = 360f, useCenter = true,
+                topLeft = Offset(cx + dx - ellipseW / 2f, cy + dy - ellipseH / 2f),
+                size = Size(ellipseW, ellipseH)
+            )
+        }
     }
 }
 
@@ -440,7 +466,20 @@ object ShadowEngine {
 // =====================================================================
 
 object LightingEngine {
-    /** Dibuja luces puntuales (faroles, ventanas, faros) sobre el frame. Solo se ve si está oscuro. */
+    /**
+     * Luces puntuales con bloom PCF poor-man's. Pipeline en 4 capas
+     * (de fuera hacia dentro), todas aditivas, simulando un blur radial:
+     *
+     *   1. Outer bloom — gradient enorme (1.65× radio), alpha bajo, Plus.
+     *      Da el "spread" suave que hace que la luz "respire" en la oscuridad.
+     *   2. Halo principal — el original, BlendMode.Screen.
+     *   3. Núcleo brillante — el original, Plus.
+     *   4. Hot spot — punto central blanco puro a alpha 0.95, Plus.
+     *      Ese highlight pequeño pero saturado simula la lente de la bombilla.
+     *
+     * Coste: 4× drawCircle por luz (vs 2× anteriores). Si hay <60 luces en
+     * pantalla a la vez (caso típico), el coste sigue siendo trivial.
+     */
     fun DrawScope.drawLights(
         lights: List<PointLight>,
         ambient: Float,
@@ -449,7 +488,22 @@ object LightingEngine {
         if (ambient > 0.7f) return  // de día las luces son invisibles
         val lightStrength = (1f - ambient).coerceIn(0f, 1f)
         for (light in lights) {
-            // Halo amplio
+            // 1) Outer bloom — diffuse spread (Plus / aditivo)
+            val outerR = light.radius * 1.65f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        light.color.copy(alpha = light.intensity * lightStrength * 0.30f),
+                        light.color.copy(alpha = 0f)
+                    ),
+                    center = Offset(light.x, light.y),
+                    radius = outerR
+                ),
+                radius = outerR,
+                center = Offset(light.x, light.y),
+                blendMode = BlendMode.Plus
+            )
+            // 2) Halo principal (Screen)
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
@@ -463,10 +517,17 @@ object LightingEngine {
                 center = Offset(light.x, light.y),
                 blendMode = BlendMode.Screen
             )
-            // Núcleo brillante
+            // 3) Núcleo brillante
             drawCircle(
                 color = light.color.copy(alpha = light.intensity * 0.8f * lightStrength),
                 radius = light.radius * 0.18f,
+                center = Offset(light.x, light.y),
+                blendMode = BlendMode.Plus
+            )
+            // 4) Hot spot — highlight central muy saturado para simular la lente
+            drawCircle(
+                color = Color.White.copy(alpha = 0.95f * lightStrength),
+                radius = light.radius * 0.06f,
                 center = Offset(light.x, light.y),
                 blendMode = BlendMode.Plus
             )
