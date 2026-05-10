@@ -350,6 +350,113 @@ object CryptoEngine {
         )
     }
 
+    // ===================== Contratación directa de mineros =====================
+
+    /** Coste único de fichaje por cada minero contratado vía atajo crypto. */
+    const val MINER_HIRE_COST: Double = 800.0
+    /** Salario mensual fijo de un minero contratado por el atajo. */
+    const val MINER_MONTHLY_SALARY: Double = 350.0
+    /** Skill base de un minero (suficiente para minar, no para fábricas top). */
+    const val MINER_SKILL: Double = 0.7
+
+    /** Cuántos mineros puede permitirse contratar el jugador con el cash actual. */
+    fun maxAffordableMiners(state: GameState): Int {
+        if (state.company.cash <= 0) return 0
+        return (state.company.cash / MINER_HIRE_COST).toInt()
+    }
+
+    /**
+     * Contrata `count` empleados nuevos como mineros del token `symbol`.
+     * Crea Employee + EmployeeProfile (rol RAW_MATERIAL como placeholder),
+     * descuenta el coste de fichaje y los asigna directamente al mining.
+     *
+     * Si `count` excede el cash disponible, se ajusta a lo permitido.
+     * Si count <= 0 o el cripto está bloqueado, retorna sin cambios.
+     */
+    fun hireMiners(state: GameState, symbol: String, count: Int): GameState {
+        if (!state.crypto.unlocked) {
+            return notify(state, NotificationKind.ERROR, "🔒 Crypto bloqueado",
+                "Aún no has desbloqueado el mercado cripto.")
+        }
+        if (count <= 0) return state
+        val def = CryptoCatalog.byMatching(symbol)
+            ?: return notify(state, NotificationKind.ERROR, "Token desconocido",
+                "El símbolo $symbol no existe.")
+        val affordable = maxAffordableMiners(state)
+        val hireN = count.coerceAtMost(affordable)
+        if (hireN <= 0) {
+            return notify(state, NotificationKind.ERROR, "Sin fondos",
+                "No tienes para fichar ni un minero (cuestan ${"%,.0f".format(MINER_HIRE_COST)} € cada uno).")
+        }
+
+        val totalCost = hireN * MINER_HIRE_COST
+        val newEmployees = mutableListOf<Employee>()
+        val newProfiles = HashMap(state.hrState.profiles)
+        for (i in 0 until hireN) {
+            val empId = "miner_${state.tick}_${System.nanoTime()}_$i"
+            val emp = Employee(
+                id = empId,
+                name = "Minero #${state.company.employees.size + i + 1}",
+                skill = MINER_SKILL,
+                monthlySalary = MINER_MONTHLY_SALARY,
+                loyalty = 1.0,
+                assignedBuildingId = null
+            )
+            newEmployees += emp
+            // Perfil mínimo para que HrState/Payroll lo reconozca.
+            newProfiles[empId] = EmployeeProfile(
+                employeeId = empId,
+                role = EmployeeRole.LABORER,
+                level = 1,
+                xp = 0L,
+                traits = emptyList(),
+                education = Education.HIGHSCHOOL,
+                hiredAtTick = state.tick,
+                lastPromotionTick = state.tick
+            )
+        }
+
+        // Actualiza holding: súmale los mineros nuevos al token.
+        val curHolding = state.crypto.holdingOrEmpty(symbol)
+        val newH = curHolding.copy(minersAssigned = curHolding.minersAssigned + hireN)
+        val newHoldings = upsertHolding(state.crypto.holdings, newH)
+
+        val newCompany = state.company.copy(
+            cash = state.company.cash - totalCost,
+            employees = state.company.employees + newEmployees
+        )
+        val newHr = state.hrState.copy(profiles = newProfiles)
+
+        val expectedDailyTokens = if (def.miningDifficulty > 0)
+            hireN.toDouble() / def.miningDifficulty else 0.0
+
+        return notify(
+            state.copy(
+                company = newCompany,
+                hrState = newHr,
+                crypto = state.crypto.copy(holdings = newHoldings)
+            ),
+            NotificationKind.SUCCESS,
+            "⛏️ +$hireN mineros contratados (${def.symbol})",
+            "Coste de fichaje: ${"%,.0f".format(totalCost)} €. " +
+                "Sueldo mensual: ${"%,.0f".format(hireN * MINER_MONTHLY_SALARY)} €. " +
+                "Producción esperada: ${"%,.4f".format(expectedDailyTokens)} ${def.symbol}/día."
+        )
+    }
+
+    /**
+     * Atajo "gasta todo el cash en mineros para este token". Calcula el
+     * máximo permitido por el cash y los contrata.
+     */
+    fun hireMaxMiners(state: GameState, symbol: String): GameState {
+        val n = maxAffordableMiners(state)
+        if (n <= 0) {
+            return notify(state, NotificationKind.ERROR, "Sin fondos",
+                "Necesitas al menos ${"%,.0f".format(MINER_HIRE_COST)} € para fichar 1 minero.")
+        }
+        return hireMiners(state, symbol, n)
+    }
+
     // ===================== Helpers =====================
 
     private fun upsertHolding(list: List<CryptoHolding>, h: CryptoHolding): List<CryptoHolding> {

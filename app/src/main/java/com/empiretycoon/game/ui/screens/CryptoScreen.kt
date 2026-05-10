@@ -9,7 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.empiretycoon.game.data.GameViewModel
+import com.empiretycoon.game.engine.CryptoEngine
 import com.empiretycoon.game.model.*
 import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.SectionTitle
@@ -86,7 +89,7 @@ fun CryptoScreen(state: GameState, vm: GameViewModel) {
         for (tok in crypto.tokens) {
             val def = CryptoCatalog.byMatching(tok.symbol) ?: continue
             val holding = crypto.holdingOrEmpty(tok.symbol)
-            CryptoTokenCard(tok, def, holding, vm)
+            CryptoTokenCard(state, tok, def, holding, vm)
             Spacer(Modifier.height(10.dp))
         }
 
@@ -109,6 +112,7 @@ fun CryptoScreen(state: GameState, vm: GameViewModel) {
 
 @Composable
 private fun CryptoTokenCard(
+    gameState: GameState,
     state: CryptoState,
     def: CryptoToken,
     holding: CryptoHolding,
@@ -116,6 +120,7 @@ private fun CryptoTokenCard(
 ) {
     var qtyText by remember(state.symbol) { mutableStateOf("0") }
     var stakeDays by remember(state.symbol) { mutableStateOf("7") }
+    var showHireDialog by remember(state.symbol) { mutableStateOf(false) }
 
     val isUp = state.history.size >= 2 && state.history.last() >= state.history[state.history.size - 2]
     val color = when {
@@ -203,8 +208,103 @@ private fun CryptoTokenCard(
                     }
                 }
             }
+            // Hire row — atajo para contratar empleados nuevos directamente como mineros
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val maxAfford = CryptoEngine.maxAffordableMiners(gameState)
+                Text(
+                    "💵 Cash: ${gameState.company.cash.fmtMoney()} · puedes fichar $maxAfford mineros " +
+                        "(${"%,.0f".format(CryptoEngine.MINER_HIRE_COST)} €/u)",
+                    fontSize = 11.sp, color = Dim,
+                    modifier = Modifier.weight(1f)
+                )
+                Button(
+                    onClick = { showHireDialog = true },
+                    enabled = maxAfford > 0,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Gold, contentColor = Ink,
+                        disabledContainerColor = InkBorder, disabledContentColor = Dim
+                    )
+                ) { Text("🆕 Contratar", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+            }
         }
     }
+
+    if (showHireDialog) {
+        HireMinersDialog(
+            gameState = gameState,
+            def = def,
+            onConfirm = { count ->
+                vm.cryptoHireMiners(state.symbol, count)
+                showHireDialog = false
+            },
+            onConfirmAll = {
+                vm.cryptoHireMaxMiners(state.symbol)
+                showHireDialog = false
+            },
+            onDismiss = { showHireDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun HireMinersDialog(
+    gameState: GameState,
+    def: CryptoToken,
+    onConfirm: (Int) -> Unit,
+    onConfirmAll: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val maxAfford = CryptoEngine.maxAffordableMiners(gameState)
+    var input by remember { mutableStateOf(maxAfford.coerceAtMost(10).toString()) }
+    val inputN = input.toIntOrNull()?.coerceIn(0, maxAfford) ?: 0
+    val totalCost = inputN * CryptoEngine.MINER_HIRE_COST
+    val expectedDaily = if (def.miningDifficulty > 0)
+        inputN.toDouble() / def.miningDifficulty else 0.0
+    val expectedMonthlyPayroll = inputN * CryptoEngine.MINER_MONTHLY_SALARY
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("⛏️ Contratar mineros · ${def.symbol}") },
+        text = {
+            Column {
+                Text(
+                    "Coste de fichaje: ${"%,.0f".format(CryptoEngine.MINER_HIRE_COST)} € por minero. " +
+                        "Sueldo mensual: ${"%,.0f".format(CryptoEngine.MINER_MONTHLY_SALARY)} €.",
+                    fontSize = 12.sp, color = Dim
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it.filter { c -> c.isDigit() } },
+                    label = { Text("Cantidad (máx. $maxAfford)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(6.dp))
+                Text("Total fichaje: ${"%,.0f".format(totalCost)} €", color = Gold, fontSize = 12.sp)
+                Text("Producción estimada: ${"%,.4f".format(expectedDaily)} ${def.symbol}/día",
+                    color = Sapphire, fontSize = 12.sp)
+                Text("Nómina mensual: ${"%,.0f".format(expectedMonthlyPayroll)} €",
+                    color = Ruby, fontSize = 12.sp)
+            }
+        },
+        confirmButton = {
+            Row {
+                TextButton(
+                    enabled = inputN > 0,
+                    onClick = { onConfirm(inputN) }
+                ) { Text("Contratar $inputN", color = Emerald, fontWeight = FontWeight.Bold) }
+                Spacer(Modifier.width(4.dp))
+                TextButton(
+                    enabled = maxAfford > 0,
+                    onClick = onConfirmAll
+                ) { Text("💸 GASTAR TODO ($maxAfford)", color = Gold, fontWeight = FontWeight.Bold) }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = Dim) }
+        }
+    )
 }
 
 @Composable
