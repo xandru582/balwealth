@@ -108,7 +108,14 @@ object RacingEngine {
         TYRES("Neumáticos", 120_000.0)
     }
 
-    /** Mejora la parte indicada en +3..+5 (escalado por nivel actual). */
+    /**
+     * Mejora la parte indicada en +3..+5 (escalado por nivel actual).
+     *
+     * IMPORTANTE: el coste se paga con `team.budget` (presupuesto interno
+     * del equipo de F1), NO con `company.cash`. El budget se alimenta del
+     * sponsor income diario y se puede inyectar manualmente desde la
+     * empresa con `transferCompanyToTeam`.
+     */
     fun upgradeCarPart(state: GameState, part: CarPart): GameState {
         val r = state.racing
         val team = r.ownedTeam() ?: return notify(state, NotificationKind.WARNING,
@@ -124,8 +131,10 @@ object RacingEngine {
             "Ya está al máximo", "${part.displayName} no puede mejorarse más (99/100).")
         // Cuanto más alto el nivel, más caro
         val cost = part.baseCost * (1.0 + level * 0.05)
-        if (state.company.cash < cost) return notify(state, NotificationKind.ERROR,
-            "Sin fondos", "Necesitas ${"%,.0f".format(cost)} € para mejorar ${part.displayName} (tienes ${"%,.0f".format(state.company.cash)} €).")
+        if (team.budget < cost) return notify(state, NotificationKind.ERROR,
+            "Budget del equipo insuficiente",
+            "Necesitas ${"%,.0f".format(cost)} € en el budget del equipo (tienes " +
+                "${"%,.0f".format(team.budget)} €). Inyecta dinero de la empresa o espera al sponsor.")
         val gain = (5 - level / 25).coerceAtLeast(2)
         val newCar = when (part) {
             CarPart.ENGINE -> car.copy(engine = (car.engine + gain).coerceAtMost(99))
@@ -133,17 +142,18 @@ object RacingEngine {
             CarPart.RELIABILITY -> car.copy(reliability = (car.reliability + gain).coerceAtMost(99))
             CarPart.TYRES -> car.copy(tyres = (car.tyres + gain).coerceAtMost(99))
         }.copy(totalUpgradeSpend = car.totalUpgradeSpend + cost)
-        val newTeam = team.copy(car = newCar)
+        // Descuenta del budget del equipo, NO del cash de la empresa.
+        val newTeam = team.copy(car = newCar, budget = team.budget - cost)
         val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.SUCCESS,
             title = "🔧 ${part.displayName} mejorada (+$gain)",
-            message = "Coste: ${"%,.0f".format(cost)} €. Nuevo nivel: ${level + gain}/100."
+            message = "Coste: ${"%,.0f".format(cost)} € del budget del equipo. " +
+                "Nuevo nivel: ${level + gain}/100. Budget restante: ${"%,.0f".format(team.budget - cost)} €."
         )
         return state.copy(
-            company = state.company.copy(cash = state.company.cash - cost),
             racing = r.copy(teams = newTeams),
             notifications = (state.notifications + n).takeLast(40)
         )
@@ -164,10 +174,62 @@ object RacingEngine {
             }
             if (level >= 99) break
             val cost = part.baseCost * (1.0 + level * 0.05)
-            if (s.company.cash < cost) break
+            if (team.budget < cost) break
             s = upgradeCarPart(s, part)
         }
         return s
+    }
+
+    /**
+     * Inyecta dinero de la empresa principal al budget del equipo.
+     * Útil cuando el equipo no genera lo suficiente con sponsors y el
+     * jugador quiere mejorar el coche más rápido. amount > 0.
+     */
+    fun transferCompanyToTeam(state: GameState, amount: Double): GameState {
+        if (amount <= 0) return state
+        val team = state.racing.ownedTeam() ?: return notify(state,
+            NotificationKind.WARNING, "Sin equipo", "Compra primero un equipo de F1.")
+        val safeAmount = amount.coerceAtMost(state.company.cash)
+        if (safeAmount <= 0) return notify(state, NotificationKind.ERROR,
+            "Sin fondos", "No tienes cash en la empresa para inyectar.")
+        val newTeam = team.copy(budget = team.budget + safeAmount)
+        val newTeams = state.racing.teams.map { if (it.id == team.id) newTeam else it }
+        return notify(
+            state.copy(
+                company = state.company.copy(cash = state.company.cash - safeAmount),
+                racing = state.racing.copy(teams = newTeams)
+            ),
+            NotificationKind.SUCCESS,
+            "💵 Inyección: ${team.flag} ${team.name}",
+            "Has inyectado ${"%,.0f".format(safeAmount)} € de la empresa al budget del equipo. " +
+                "Nuevo budget: ${"%,.0f".format(team.budget + safeAmount)} €."
+        )
+    }
+
+    /**
+     * Retira dinero del budget del equipo a la caja de la empresa
+     * principal. Útil cuando el equipo de F1 acumula efectivo y el
+     * jugador quiere reinvertirlo en su negocio. amount > 0.
+     */
+    fun transferTeamToCompany(state: GameState, amount: Double): GameState {
+        if (amount <= 0) return state
+        val team = state.racing.ownedTeam() ?: return notify(state,
+            NotificationKind.WARNING, "Sin equipo", "No tienes equipo del que sacar dinero.")
+        val safeAmount = amount.coerceAtMost(team.budget)
+        if (safeAmount <= 0) return notify(state, NotificationKind.ERROR,
+            "Budget vacío", "El equipo no tiene budget que retirar.")
+        val newTeam = team.copy(budget = team.budget - safeAmount)
+        val newTeams = state.racing.teams.map { if (it.id == team.id) newTeam else it }
+        return notify(
+            state.copy(
+                company = state.company.copy(cash = state.company.cash + safeAmount),
+                racing = state.racing.copy(teams = newTeams)
+            ),
+            NotificationKind.SUCCESS,
+            "💸 Retirada: ${team.flag} ${team.name}",
+            "Has retirado ${"%,.0f".format(safeAmount)} € del budget del equipo. " +
+                "Nuevo budget: ${"%,.0f".format(team.budget - safeAmount)} €."
+        )
     }
 
     /** Contratar piloto al equipo del jugador en slot 1 ó 2. */
@@ -181,22 +243,24 @@ object RacingEngine {
         }
         if (occupied) return notify(state, NotificationKind.WARNING,
             "Piloto ocupado", "${driver.name} ya tiene contrato con otro equipo.")
-        // Cuesta una prima de fichaje = 30 días de salario
+        // Cuesta una prima de fichaje = 30 días de salario (del budget del equipo)
         val signOnFee = driver.salaryPerDay * 30
-        if (state.company.cash < signOnFee) return notify(state, NotificationKind.ERROR,
-            "Sin fondos", "Prima de fichaje: ${"%,.0f".format(signOnFee)} €.")
-        val newTeam = if (slot == 1) team.copy(driver1Id = driverId)
-                      else team.copy(driver2Id = driverId)
+        if (team.budget < signOnFee) return notify(state, NotificationKind.ERROR,
+            "Budget del equipo insuficiente",
+            "Prima de fichaje: ${"%,.0f".format(signOnFee)} €. " +
+                "Budget actual: ${"%,.0f".format(team.budget)} €. Inyecta dinero desde la empresa.")
+        val newTeam = (if (slot == 1) team.copy(driver1Id = driverId)
+                       else team.copy(driver2Id = driverId)).copy(budget = team.budget - signOnFee)
         val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.SUCCESS,
             title = "✍️ Fichaje confirmado",
-            message = "${driver.flag} ${driver.name} se une a ${team.name}."
+            message = "${driver.flag} ${driver.name} se une a ${team.name}. " +
+                "Coste: ${"%,.0f".format(signOnFee)} € del budget."
         )
         return state.copy(
-            company = state.company.copy(cash = state.company.cash - signOnFee),
             racing = r.copy(teams = newTeams),
             notifications = (state.notifications + n).takeLast(40)
         )
@@ -216,23 +280,29 @@ object RacingEngine {
         if (team.brandValue < sponsor.minBrandRequired) return notify(state,
             NotificationKind.ERROR, "Brand insuficiente",
             "${sponsor.brand} exige brand ${sponsor.minBrandRequired} (tienes ${team.brandValue}).")
-        if (state.company.cash < sponsor.signOnFee) return notify(state, NotificationKind.ERROR,
-            "Sin fondos", "Prima de firma: ${"%,.0f".format(sponsor.signOnFee)} €.")
+        if (team.budget < sponsor.signOnFee) return notify(state, NotificationKind.ERROR,
+            "Budget del equipo insuficiente",
+            "Prima de firma: ${"%,.0f".format(sponsor.signOnFee)} €. " +
+                "Budget actual: ${"%,.0f".format(team.budget)} €.")
         val newContract = ActiveSponsorship(
             sponsorId = sponsorId,
             signedOnDay = state.day,
             expiresOnDay = state.day + sponsor.contractDays
         )
+        val newTeam = team.copy(budget = team.budget - sponsor.signOnFee)
+        val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.SUCCESS,
             title = "✍️ ${sponsor.tier.emoji} ${sponsor.brand}",
-            message = "Contrato ${sponsor.contractDays} días. Prima: ${"%,.0f".format(sponsor.signOnFee)} €."
+            message = "Contrato ${sponsor.contractDays} días. Prima: ${"%,.0f".format(sponsor.signOnFee)} € del budget."
         )
         return state.copy(
-            company = state.company.copy(cash = state.company.cash - sponsor.signOnFee),
-            racing = r.copy(activeSponsorships = r.activeSponsorships + newContract),
+            racing = r.copy(
+                teams = newTeams,
+                activeSponsorships = r.activeSponsorships + newContract
+            ),
             notifications = (state.notifications + n).takeLast(40)
         )
     }
@@ -240,20 +310,25 @@ object RacingEngine {
     /** Cancela un sponsorship activo (penalización: 30% de lo que falta del contrato). */
     fun cancelSponsor(state: GameState, sponsorId: String): GameState {
         val r = state.racing
+        val team = r.ownedTeam() ?: return state
         val active = r.activeSponsorships.find { it.sponsorId == sponsorId } ?: return state
         val sponsor = SponsorCatalog.byId(sponsorId) ?: return state
         val daysLeft = (active.expiresOnDay - state.day).coerceAtLeast(0)
         val penalty = sponsor.baseDailyPay * daysLeft * 0.30
+        val newTeam = team.copy(budget = (team.budget - penalty).coerceAtLeast(0.0))
+        val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.WARNING,
             title = "Contrato roto",
-            message = "${sponsor.brand} cobra ${"%,.0f".format(penalty)} € por ruptura."
+            message = "${sponsor.brand} cobra ${"%,.0f".format(penalty)} € del budget del equipo."
         )
         return state.copy(
-            company = state.company.copy(cash = (state.company.cash - penalty).coerceAtLeast(0.0)),
-            racing = r.copy(activeSponsorships = r.activeSponsorships.filterNot { it.sponsorId == sponsorId }),
+            racing = r.copy(
+                teams = newTeams,
+                activeSponsorships = r.activeSponsorships.filterNot { it.sponsorId == sponsorId }
+            ),
             notifications = (state.notifications + n).takeLast(40)
         )
     }
@@ -272,35 +347,41 @@ object RacingEngine {
             return notify(state, NotificationKind.WARNING,
                 "Rol ocupado", "Ya tienes un ${staff.role.label} contratado.")
         val signOnFee = staff.salaryPerDay * 30
-        if (state.company.cash < signOnFee) return notify(state, NotificationKind.ERROR,
-            "Sin fondos", "Prima de contratación: ${"%,.0f".format(signOnFee)} €.")
+        if (team.budget < signOnFee) return notify(state, NotificationKind.ERROR,
+            "Budget del equipo insuficiente",
+            "Prima de contratación: ${"%,.0f".format(signOnFee)} €. " +
+                "Budget actual: ${"%,.0f".format(team.budget)} €.")
+        val newTeam = team.copy(budget = team.budget - signOnFee)
+        val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.SUCCESS,
             title = "${staff.role.emoji} ${staff.role.label}",
-            message = "${staff.flag} ${staff.name} (${staff.rating}/100) se une a ${team.name}."
+            message = "${staff.flag} ${staff.name} (${staff.rating}/100) se une a ${team.name}. " +
+                "Coste: ${"%,.0f".format(signOnFee)} € del budget."
         )
         return state.copy(
-            company = state.company.copy(cash = state.company.cash - signOnFee),
-            racing = r.copy(hiredStaff = r.hiredStaff + staffId),
+            racing = r.copy(teams = newTeams, hiredStaff = r.hiredStaff + staffId),
             notifications = (state.notifications + n).takeLast(40)
         )
     }
 
     fun fireStaff(state: GameState, staffId: String): GameState {
         val r = state.racing
+        val team = r.ownedTeam() ?: return state
         val staff = StaffPool.byId(staffId) ?: return state
         val severance = staff.salaryPerDay * 60
+        val newTeam = team.copy(budget = (team.budget - severance).coerceAtLeast(0.0))
+        val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         return state.copy(
-            company = state.company.copy(cash = (state.company.cash - severance).coerceAtLeast(0.0)),
-            racing = r.copy(hiredStaff = r.hiredStaff - staffId),
+            racing = r.copy(teams = newTeams, hiredStaff = r.hiredStaff - staffId),
             notifications = (state.notifications + GameNotification(
                 id = System.nanoTime(),
                 timestamp = System.currentTimeMillis(),
                 kind = NotificationKind.INFO,
                 title = "Despido de ${staff.role.label}",
-                message = "${staff.name} se va. Indemnización ${"%,.0f".format(severance)} €."
+                message = "${staff.name} se va. Indemnización ${"%,.0f".format(severance)} € del budget."
             )).takeLast(40)
         )
     }
@@ -312,17 +393,17 @@ object RacingEngine {
         val driverId = if (slot == 1) team.driver1Id else team.driver2Id
         val driver = driverId?.let { DriverPool.byId(it) } ?: return state
         val severance = driver.salaryPerDay * 60
-        val newTeam = if (slot == 1) team.copy(driver1Id = null) else team.copy(driver2Id = null)
+        val newTeam = (if (slot == 1) team.copy(driver1Id = null) else team.copy(driver2Id = null))
+            .copy(budget = (team.budget - severance).coerceAtLeast(0.0))
         val newTeams = r.teams.map { if (it.id == team.id) newTeam else it }
         val n = GameNotification(
             id = System.nanoTime(),
             timestamp = System.currentTimeMillis(),
             kind = NotificationKind.WARNING,
             title = "Piloto despedido",
-            message = "${driver.name} se va. Indemnización: ${"%,.0f".format(severance)} €."
+            message = "${driver.name} se va. Indemnización: ${"%,.0f".format(severance)} € del budget."
         )
         return state.copy(
-            company = state.company.copy(cash = (state.company.cash - severance).coerceAtLeast(0.0)),
             racing = r.copy(teams = newTeams),
             notifications = (state.notifications + n).takeLast(40)
         )
@@ -341,7 +422,11 @@ object RacingEngine {
         if (!r.unlocked) return state
 
         var s = state
-        // Pago diario al / del equipo del jugador (sponsor base + sponsorships + staff)
+        // Pago diario al / del equipo del jugador. El neto (sponsor base +
+        // sponsorships - salarios drivers - staff - mantenimiento) se aplica
+        // al BUDGET del equipo. El equipo es una unidad económica separada
+        // de la empresa: si quieres dinero de la F1, retíralo manualmente
+        // con `transferTeamToCompany` y viceversa con `transferCompanyToTeam`.
         val owned = r.ownedTeam()
         if (owned != null) {
             val sponsorshipIncome = r.totalSponsorDailyIncome()
@@ -349,7 +434,8 @@ object RacingEngine {
             val income = owned.sponsorIncomePerDay + sponsorshipIncome
             val cost = owned.totalDailyCost() + staffCost
             val net = income - cost
-            s = s.copy(company = s.company.copy(cash = s.company.cash + net))
+            // El budget puede quedar negativo (deuda interna del equipo);
+            // el jugador deberá inyectar cash desde la empresa para cubrirla.
             val updatedTeam = owned.copy(budget = owned.budget + net)
             val newTeams = s.racing.teams.map { if (it.id == owned.id) updatedTeam else it }
             s = s.copy(racing = s.racing.copy(
@@ -511,7 +597,10 @@ object RacingEngine {
             team.copy(seasonPoints = team.seasonPoints + gained, budget = newBudget)
         }
 
-        // Premio en cash al jugador
+        // Premio al jugador: ya se ha sumado al BUDGET del equipo en el
+        // mapping de arriba (newTeams). NO duplicamos al company.cash.
+        // Si quieres ese dinero en la empresa principal, retíralo manualmente
+        // con `transferTeamToCompany`.
         val playerTeam = r.ownedTeam()
         var company = state.company
         var notifications = state.notifications
@@ -533,8 +622,10 @@ object RacingEngine {
                 bestPos in 7..10 -> circuit.basePrize * 0.10
                 else -> 0.0
             }
+            // El premio YA se sumó al budget del equipo en `newTeams`.
+            // Aquí solo damos XP al jugador.
             if (prize > 0) {
-                company = company.copy(cash = company.cash + prize).addXp(300L + (1100L / bestPos.coerceAtLeast(1)))
+                company = company.addXp(300L + (1100L / bestPos.coerceAtLeast(1)))
             }
             // Notificación principal del resultado
             val title = when (bestPos) {
@@ -544,7 +635,7 @@ object RacingEngine {
                 in 4..10 -> "🏁 P$bestPos en ${circuit.name}"
                 else -> "❌ Sin puntos en ${circuit.name}"
             }
-            val msg = if (prize > 0) "Premio: ${"%,.0f".format(prize)} €."
+            val msg = if (prize > 0) "Premio: ${"%,.0f".format(prize)} € al budget del equipo."
                       else "Tu equipo no entró en zona de puntos."
             notifications = (notifications + GameNotification(
                 id = System.nanoTime(),
@@ -586,13 +677,15 @@ object RacingEngine {
                 )
             }
             if (bonusTotal > 0) {
-                company = company.copy(cash = company.cash + bonusTotal)
+                // Bonus de patrocinadores también va al budget del equipo
+                // (no al cash de la empresa principal). El jugador puede
+                // retirarlo con transferTeamToCompany cuando quiera.
                 notifications = (notifications + GameNotification(
                     id = System.nanoTime() + 17,
                     timestamp = System.currentTimeMillis(),
                     kind = NotificationKind.SUCCESS,
                     title = "💰 Bonificación de patrocinadores",
-                    message = "Has recibido ${"%,.0f".format(bonusTotal)} € extra por la actuación."
+                    message = "El equipo ha recibido ${"%,.0f".format(bonusTotal)} € extra al budget."
                 )).takeLast(40)
             }
         }
@@ -626,12 +719,28 @@ object RacingEngine {
             r.circuitRecords.map { if (it.circuitId == circuit.id) newRecord else it }
         else r.circuitRecords + newRecord
 
+        // Aplicar bonus de patrocinadores al BUDGET del equipo del jugador.
+        val finalTeams = if (playerTeam != null) {
+            val playerTeamBonusTotal = newActiveSponsorships
+                .filter { sp -> r.activeSponsorships.any { it.sponsorId == sp.sponsorId } }
+                .sumOf { sp ->
+                    val orig = r.activeSponsorships.find { it.sponsorId == sp.sponsorId }
+                    sp.totalEarned - (orig?.totalEarned ?: 0.0)
+                }
+            if (playerTeamBonusTotal > 0) {
+                newTeams.map {
+                    if (it.id == playerTeam.id) it.copy(budget = it.budget + playerTeamBonusTotal)
+                    else it
+                }
+            } else newTeams
+        } else newTeams
+
         return state.copy(
             company = company,
             notifications = notifications,
             racing = r.copy(
                 drivers = updatedDrivers,
-                teams = newTeams,
+                teams = finalTeams,
                 nextRaceIndex = r.nextRaceIndex + 1,
                 racesThisSeason = r.racesThisSeason + 1,
                 resultsHistory = (r.resultsHistory + result).takeLast(40),

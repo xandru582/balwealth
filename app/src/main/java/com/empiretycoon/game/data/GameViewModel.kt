@@ -537,6 +537,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun racingUpgrade(part: RacingEngine.CarPart) = mutate { RacingEngine.upgradeCarPart(it, part) }
     fun racingUpgradeMany(part: RacingEngine.CarPart, times: Int) =
         mutate { RacingEngine.upgradeCarPartMany(it, part, times) }
+    fun racingInjectCash(amount: Double) =
+        mutate { RacingEngine.transferCompanyToTeam(it, amount) }
+    fun racingWithdrawCash(amount: Double) =
+        mutate { RacingEngine.transferTeamToCompany(it, amount) }
     fun racingSignDriver(driverId: String, slot: Int) =
         mutate { RacingEngine.signDriver(it, driverId, slot) }
     fun racingFireDriver(slot: Int) = mutate { RacingEngine.fireDriver(it, slot) }

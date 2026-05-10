@@ -165,7 +165,8 @@ private fun TeamTab(state: GameState, vm: GameViewModel) {
 
         // Finanzas
         EmpireCard {
-            SectionTitle("Finanzas")
+            SectionTitle("Finanzas del equipo",
+                "El equipo es una unidad económica separada de la empresa.")
             Spacer(Modifier.height(6.dp))
             FinancialRow("💰 Sponsor diario", "+${"%,.0f".format(team.sponsorIncomePerDay)} €", Emerald)
             FinancialRow("👨‍🔧 Coste diario", "-${"%,.0f".format(team.totalDailyCost())} €", Ruby)
@@ -173,9 +174,17 @@ private fun TeamTab(state: GameState, vm: GameViewModel) {
             FinancialRow("📊 Neto / día",
                 "${if (net >= 0) "+" else ""}${"%,.0f".format(net)} €",
                 if (net >= 0) Emerald else Ruby)
-            FinancialRow("🏛️ Budget acumulado", "${"%,.0f".format(team.budget)} €", Gold)
+            FinancialRow("🏛️ Budget del equipo",
+                "${"%,.0f".format(team.budget)} €",
+                if (team.budget >= 0) Gold else Ruby)
+            FinancialRow("💵 Cash empresa", "${"%,.0f".format(state.company.cash)} €", Sapphire)
             FinancialRow("⭐ Brand value", "${team.brandValue}/100", Sapphire)
         }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Inyección / retirada de cash
+        TreasuryTransferCard(state, vm)
 
         Spacer(Modifier.height(8.dp))
 
@@ -206,12 +215,82 @@ private fun EmptyTeamPrompt() {
 }
 
 @Composable
+private fun TreasuryTransferCard(state: GameState, vm: GameViewModel) {
+    val team = state.racing.ownedTeam() ?: return
+    var amountText by remember { mutableStateOf("100000") }
+    val amount = amountText.toDoubleOrNull() ?: 0.0
+
+    EmpireCard(borderColor = Gold) {
+        SectionTitle("Tesorería · empresa ↔ equipo",
+            "Mueve dinero entre la caja de tu empresa y el budget del equipo de F1.")
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = amountText,
+            onValueChange = { amountText = it.filter { c -> c.isDigit() } },
+            label = { Text("Cantidad (€)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(6.dp))
+        // Quick presets
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            QuickAmount("100k") { amountText = "100000" }
+            Spacer(Modifier.width(4.dp))
+            QuickAmount("1M") { amountText = "1000000" }
+            Spacer(Modifier.width(4.dp))
+            QuickAmount("10M") { amountText = "10000000" }
+            Spacer(Modifier.width(4.dp))
+            QuickAmount("Cash empresa") { amountText = state.company.cash.toLong().toString() }
+            Spacer(Modifier.width(4.dp))
+            QuickAmount("Budget equipo") { amountText = team.budget.toLong().coerceAtLeast(0).toString() }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(
+                onClick = { vm.racingInjectCash(amount) },
+                enabled = amount > 0 && state.company.cash >= amount,
+                modifier = Modifier.weight(1f).height(40.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Emerald, contentColor = Ink,
+                    disabledContainerColor = InkBorder, disabledContentColor = Dim
+                )
+            ) {
+                Text("💵 Inyectar al equipo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = { vm.racingWithdrawCash(amount) },
+                enabled = amount > 0 && team.budget >= amount,
+                modifier = Modifier.weight(1f).height(40.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Sapphire, contentColor = Ink,
+                    disabledContainerColor = InkBorder, disabledContentColor = Dim
+                )
+            ) {
+                Text("💸 Retirar a empresa", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickAmount(label: String, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = Sapphire)
+    ) { Text(label, fontSize = 10.sp) }
+}
+
+@Composable
 private fun CarStatRow(
     label: String, level: Int,
     part: RacingEngine.CarPart, vm: GameViewModel, state: GameState
 ) {
     val cost = part.baseCost * (1.0 + level * 0.05)
-    val canAfford = state.company.cash >= cost
+    // Las mejoras se pagan con el BUDGET del equipo, no el cash de la empresa.
+    val teamBudget = state.racing.ownedTeam()?.budget ?: 0.0
+    val canAfford = teamBudget >= cost
     val maxed = level >= 99
     Row(
         Modifier.fillMaxWidth().padding(vertical = 4.dp),
