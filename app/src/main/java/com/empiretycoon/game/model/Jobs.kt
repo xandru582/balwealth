@@ -341,7 +341,7 @@ enum class JobId(
         get() = when (this) {
             POLICE_OFFICER, FIREFIGHTER, BAKER, CHEF,
             TAXI_DRIVER, CAR_MECHANIC, PROGRAMMER, DETECTIVE,
-            BOXER, FISHERMAN -> true
+            BOXER, FISHERMAN, FOOTBALL_PLAYER, STREAMER -> true
             else -> false
         }
 }

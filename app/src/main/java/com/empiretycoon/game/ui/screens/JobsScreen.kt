@@ -27,9 +27,11 @@ import com.empiretycoon.game.ui.screens.jobs.ChefJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DetectiveJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FirefighterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FishermanJobScreen
+import com.empiretycoon.game.ui.screens.jobs.FootballJobScreen
 import com.empiretycoon.game.ui.screens.jobs.MechanicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ProgrammerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.StreamerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.TaxiJobScreen
 import com.empiretycoon.game.ui.theme.*
 import com.empiretycoon.game.util.fmtMoney
@@ -70,6 +72,8 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.DETECTIVE -> DetectiveJobScreen(state, onFinish, onCancel)
             JobId.BOXER -> BoxerJobScreen(state, onFinish, onCancel)
             JobId.FISHERMAN -> FishermanJobScreen(state, onFinish, onCancel)
+            JobId.FOOTBALL_PLAYER -> FootballJobScreen(state, onFinish, onCancel)
+            JobId.STREAMER -> StreamerJobScreen(state, onFinish, onCancel)
             else -> { activeMiniJob = null }  // safety: no debería ocurrir
         }
         return
