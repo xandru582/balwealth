@@ -50,7 +50,7 @@ fun TutorialFinishedDialog(onClose: () -> Unit) {
         text = {
             Column {
                 Text(
-                    "Has aprendido los sistemas básicos de Empire Tycoon.",
+                    "Has aprendido los sistemas básicos de BalWealth.",
                     color = Paper,
                     fontSize = 14.sp
                 )

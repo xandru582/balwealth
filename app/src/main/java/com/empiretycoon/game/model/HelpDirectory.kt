@@ -25,7 +25,7 @@ enum class HelpTopic(val displayName: String, val emoji: String) {
 object HelpContent {
     val text: Map<HelpTopic, String> = mapOf(
         HelpTopic.OVERVIEW to (
-            "Empire Tycoon es un juego de imperio empresarial. Construyes edificios, " +
+            "BalWealth es un juego de imperio empresarial. Construyes edificios, " +
                 "asignas recetas que transforman recursos, contratas empleados y vendes " +
                 "los bienes que produces en el mercado.\n\n" +
                 "Aparte del negocio, hay una capa RPG: tu personaje sube de nivel, mejora " +

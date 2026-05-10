@@ -21,20 +21,46 @@ import com.empiretycoon.game.engine.JobsEngine
 import com.empiretycoon.game.model.*
 import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.SectionTitle
+import com.empiretycoon.game.ui.screens.jobs.ActorJobScreen
 import com.empiretycoon.game.ui.screens.jobs.BakerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.BaristaJobScreen
 import com.empiretycoon.game.ui.screens.jobs.BoxerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.BricklayerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.CarpenterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ChefJobScreen
 import com.empiretycoon.game.ui.screens.jobs.DetectiveJobScreen
+import com.empiretycoon.game.ui.screens.jobs.DirectorJobScreen
+import com.empiretycoon.game.ui.screens.jobs.DoctorJobScreen
+import com.empiretycoon.game.ui.screens.jobs.ElectricianJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FirefighterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FishermanJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FootballJobScreen
+import com.empiretycoon.game.ui.screens.jobs.GardenerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.IllusionistJobScreen
+import com.empiretycoon.game.ui.screens.jobs.RacingJobScreen
+import com.empiretycoon.game.ui.screens.jobs.VetJobScreen
+import com.empiretycoon.game.ui.screens.jobs.DentistJobScreen
+import com.empiretycoon.game.ui.screens.jobs.FarmerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.GarbageJobScreen
+import com.empiretycoon.game.ui.screens.jobs.IceCreamJobScreen
+import com.empiretycoon.game.ui.screens.jobs.K9JobScreen
+import com.empiretycoon.game.ui.screens.jobs.LibrarianJobScreen
 import com.empiretycoon.game.ui.screens.jobs.MechanicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PainterJobScreen
+import com.empiretycoon.game.ui.screens.jobs.ParamedicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PharmacistJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PilotJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PizzeriaJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PlumberJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
+import com.empiretycoon.game.ui.screens.jobs.PostmanJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ProgrammerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.StreamerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.TaxiJobScreen
+import com.empiretycoon.game.ui.screens.jobs.TeacherJobScreen
+import com.empiretycoon.game.ui.screens.jobs.TrainDriverJobScreen
+import com.empiretycoon.game.ui.screens.jobs.TruckerJobScreen
+import com.empiretycoon.game.ui.screens.jobs.UIDesignerJobScreen
 import com.empiretycoon.game.ui.theme.*
 import com.empiretycoon.game.util.fmtMoney
 
@@ -57,6 +83,13 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
     // el composable termina (onFinish / onCancel), volvemos al hub.
     var activeMiniJob by remember { mutableStateOf<JobId?>(null) }
 
+    // Estado local: si != null, mostramos la pantalla de empresa del oficio.
+    var activeBusinessJob by remember { mutableStateOf<JobId?>(null) }
+    activeBusinessJob?.let { job ->
+        JobBusinessScreen(job = job, state = state, vm = vm, onBack = { activeBusinessJob = null })
+        return
+    }
+
     activeMiniJob?.let { job ->
         val onFinish: (Double) -> Unit = { scoreMul ->
             vm.jobsWorkShiftWithScore(job, scoreMul)
@@ -78,7 +111,33 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.STREAMER -> StreamerJobScreen(state, onFinish, onCancel)
             JobId.PAINTER -> PainterJobScreen(state, onFinish, onCancel)
             JobId.PHARMACIST -> PharmacistJobScreen(state, onFinish, onCancel)
-            else -> { activeMiniJob = null }  // safety: no debería ocurrir
+            JobId.TEACHER -> TeacherJobScreen(state, onFinish, onCancel)
+            JobId.FARMER -> FarmerJobScreen(state, onFinish, onCancel)
+            JobId.LIBRARIAN -> LibrarianJobScreen(state, onFinish, onCancel)
+            JobId.DENTIST -> DentistJobScreen(state, onFinish, onCancel)
+            JobId.POSTMAN -> PostmanJobScreen(state, onFinish, onCancel)
+            JobId.ICE_CREAM_SELLER -> IceCreamJobScreen(state, onFinish, onCancel)
+            JobId.PARAMEDIC -> ParamedicJobScreen(state, onFinish, onCancel)
+            JobId.K9_OFFICER -> K9JobScreen(state, onFinish, onCancel)
+            JobId.ACTOR -> ActorJobScreen(state, onFinish, onCancel)
+            JobId.PIZZAIOLO -> PizzeriaJobScreen(state, onFinish, onCancel)
+            JobId.BARISTA -> BaristaJobScreen(state, onFinish, onCancel)
+            JobId.GARBAGE_COLLECTOR -> GarbageJobScreen(state, onFinish, onCancel)
+            JobId.BRICKLAYER -> BricklayerJobScreen(state, onFinish, onCancel)
+            JobId.CARPENTER -> CarpenterJobScreen(state, onFinish, onCancel)
+            JobId.PLUMBER -> PlumberJobScreen(state, onFinish, onCancel)
+            JobId.ELECTRICIAN -> ElectricianJobScreen(state, onFinish, onCancel)
+            JobId.UI_DESIGNER -> UIDesignerJobScreen(state, onFinish, onCancel)
+            JobId.FILM_DIRECTOR -> DirectorJobScreen(state, onFinish, onCancel)
+            JobId.TRUCKER -> TruckerJobScreen(state, onFinish, onCancel)
+            JobId.AIRLINE_PILOT -> PilotJobScreen(state, onFinish, onCancel)
+            JobId.TRAIN_DRIVER -> TrainDriverJobScreen(state, onFinish, onCancel)
+            JobId.RACING_DRIVER -> RacingJobScreen(state, onFinish, onCancel)
+            JobId.GARDENER -> GardenerJobScreen(state, onFinish, onCancel)
+            JobId.VET -> VetJobScreen(state, onFinish, onCancel)
+            JobId.ILLUSIONIST -> IllusionistJobScreen(state, onFinish, onCancel)
+            JobId.DOCTOR -> DoctorJobScreen(state, onFinish, onCancel)
+            else -> { activeMiniJob = null }  // unreachable: all 40 jobs implemented
         }
         return
     }
@@ -92,10 +151,15 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
         if (!js.accepted) {
             JobsWelcome(state, vm)
         } else {
-            JobsHubView(state, vm) { job ->
-                if (job.miniGameImplemented) activeMiniJob = job
-                else vm.jobsWorkShift(job)
-            }
+            JobsHubView(
+                state = state,
+                vm = vm,
+                onWorkRequested = { job ->
+                    if (job.miniGameImplemented) activeMiniJob = job
+                    else vm.jobsWorkShift(job)
+                },
+                onBusinessRequested = { job -> activeBusinessJob = job }
+            )
         }
     }
 }
@@ -151,7 +215,8 @@ private fun JobsWelcome(state: GameState, vm: GameViewModel) {
 private fun JobsHubView(
     state: GameState,
     vm: GameViewModel,
-    onWorkRequested: (JobId) -> Unit
+    onWorkRequested: (JobId) -> Unit,
+    onBusinessRequested: (JobId) -> Unit
 ) {
     val js = state.jobs
     val player = state.player
@@ -210,7 +275,9 @@ private fun JobsHubView(
                     requiredLevel = job.requiredPlayerLevel,
                     wagePreview = JobsEngine.previewWage(state, job),
                     canWork = state.player.energy >= job.energyCost,
-                    onWork = { onWorkRequested(job) }
+                    hasBusiness = state.jobBusinesses.hasBusinessFor(job),
+                    onWork = { onWorkRequested(job) },
+                    onBusiness = { onBusinessRequested(job) }
                 )
                 Spacer(Modifier.height(6.dp))
             }
@@ -273,7 +340,9 @@ private fun JobCard(
     requiredLevel: Int,
     wagePreview: Double,
     canWork: Boolean,
-    onWork: () -> Unit
+    hasBusiness: Boolean,
+    onWork: () -> Unit,
+    onBusiness: () -> Unit
 ) {
     val border = when {
         !progress.unlocked -> InkBorder
@@ -333,6 +402,18 @@ private fun JobCard(
                     ) {
                         Text("Trabajar 1h", fontSize = 11.sp,
                             color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = onBusiness,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text(
+                            if (hasBusiness) "🏢 Tu empresa" else "🏪 Montar empresa",
+                            fontSize = 10.sp,
+                            color = if (hasBusiness) Emerald else Sapphire,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

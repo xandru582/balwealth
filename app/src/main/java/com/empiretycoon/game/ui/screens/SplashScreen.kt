@@ -50,7 +50,7 @@ import com.empiretycoon.game.ui.theme.Paper
  */
 @Composable
 fun SplashScreen(
-    autoMs: Long = 2_500L,
+    autoMs: Long = 1_500L,
     onFinish: () -> Unit
 ) {
     val logoScale = remember { Animatable(0.4f) }
@@ -123,9 +123,9 @@ fun SplashScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "EMPIRE TYCOON",
+                text = "BALWEALTH",
                 color = Gold,
-                fontSize = 32.sp,
+                fontSize = 36.sp,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -135,9 +135,9 @@ fun SplashScreen(
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Construye tu imperio, paso a paso",
+                text = "Tycoon · RPG · Mundo 2D · 40 oficios",
                 color = Paper,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.alpha(subtitleAlpha.value)

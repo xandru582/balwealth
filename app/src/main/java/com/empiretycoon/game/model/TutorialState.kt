@@ -3,7 +3,7 @@ package com.empiretycoon.game.model
 import kotlinx.serialization.Serializable
 
 /**
- * Pasos del tutorial guiado de Empire Tycoon. El orden refleja el flujo
+ * Pasos del tutorial guiado de BalWealth. El orden refleja el flujo
  * recomendado para que un nuevo jugador aprenda los sistemas de juego.
  *
  * El motor avanza al siguiente paso cuando se cumple la `AdvanceCondition`
@@ -152,7 +152,7 @@ object TutorialScript {
     val steps: List<TutorialSpec> = listOf(
         TutorialSpec(
             step = TutorialStep.WELCOME,
-            title = "¡Bienvenido a Empire Tycoon!",
+            title = "¡Bienvenido a BalWealth!",
             message = "Vas a construir un imperio empresarial desde cero. Te enseñaré las claves en pocos pasos. Pulsa Empezar para comenzar.",
             primaryAction = "Empezar",
             advanceCondition = AdvanceCondition.TAP_PRIMARY

@@ -91,7 +91,8 @@ object JobsEngine {
         }
 
         val statValue = statValueFor(state.player, job.preferredStat)
-        val wage = computeWage(job, cur.level, statValue, state.player.level)
+        val wageBase = computeWage(job, cur.level, statValue, state.player.level)
+        val wage = wageBase * state.traitTree.multiplierFor(TraitEffectType.JOB_WAGE_MUL)
 
         // XP del oficio + posible level-up.
         val newXp = cur.xpInLevel + SHIFT_BASE_XP
@@ -169,7 +170,8 @@ object JobsEngine {
     fun previewWage(state: GameState, job: JobId): Double {
         val cur = state.jobs.progressOf(job)
         val statValue = statValueFor(state.player, job.preferredStat)
-        return computeWage(job, cur.level, statValue, state.player.level)
+        return computeWage(job, cur.level, statValue, state.player.level) *
+            state.traitTree.multiplierFor(TraitEffectType.JOB_WAGE_MUL)
     }
 
     /**
@@ -199,7 +201,8 @@ object JobsEngine {
         }
 
         val statValue = statValueFor(state.player, job.preferredStat)
-        val baseWage = computeWage(job, cur.level, statValue, state.player.level)
+        val baseWage = computeWage(job, cur.level, statValue, state.player.level) *
+            state.traitTree.multiplierFor(TraitEffectType.JOB_WAGE_MUL)
         val safeMul = scoreMul.coerceIn(0.5, 1.5)
         val wage = baseWage * safeMul
 

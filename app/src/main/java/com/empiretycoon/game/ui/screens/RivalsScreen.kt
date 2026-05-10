@@ -17,8 +17,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.empiretycoon.game.data.GameViewModel
+import com.empiretycoon.game.engine.HostileTakeoverEngine
 import com.empiretycoon.game.engine.RivalEngine
 import com.empiretycoon.game.model.GameState
+import com.empiretycoon.game.model.HostileTakeoverConstants
 import com.empiretycoon.game.model.Rival
 import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.ProgressBarWithLabel
@@ -79,7 +81,7 @@ fun RivalsScreen(state: GameState, vm: GameViewModel) {
             }
         }
         items(active, key = { it.id }) { rival ->
-            RivalCard(rival = rival, state = state, defeated = false)
+            RivalCard(rival = rival, state = state, vm = vm, defeated = false)
             Spacer(Modifier.height(8.dp))
         }
         if (defeated.isNotEmpty()) {
@@ -89,7 +91,7 @@ fun RivalsScreen(state: GameState, vm: GameViewModel) {
                 Spacer(Modifier.height(4.dp))
             }
             items(defeated, key = { it.id }) { rival ->
-                RivalCard(rival = rival, state = state, defeated = true)
+                RivalCard(rival = rival, state = state, vm = vm, defeated = true)
                 Spacer(Modifier.height(8.dp))
             }
         }
@@ -98,7 +100,7 @@ fun RivalsScreen(state: GameState, vm: GameViewModel) {
 }
 
 @Composable
-private fun RivalCard(rival: Rival, state: GameState, defeated: Boolean) {
+private fun RivalCard(rival: Rival, state: GameState, vm: GameViewModel, defeated: Boolean) {
     val isCurrent = state.rivals.currentChallenge == rival.id && !defeated
     val border = when {
         defeated -> Emerald
@@ -171,6 +173,30 @@ private fun RivalCard(rival: Rival, state: GameState, defeated: Boolean) {
                 "Recompensa: +${rival.rewardCash.fmtMoney()} · +${rival.rewardXp} XP · +${rival.rewardReputation} rep",
                 color = Emerald,
                 fontSize = 11.sp
+            )
+            Spacer(Modifier.height(8.dp))
+            // OPA hostil — botón de adquisición agresiva
+            val takeoverCost = HostileTakeoverConstants.baseCost(rival.cash)
+            val (canLaunch, reason) = HostileTakeoverEngine.canLaunch(state, rival.id)
+            Button(
+                onClick = { vm.launchHostileTakeover(rival.id) },
+                enabled = canLaunch,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Ruby, contentColor = Ink,
+                    disabledContainerColor = InkBorder, disabledContentColor = Dim
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (canLaunch) "🏴‍☠️ OPA hostil · ${takeoverCost.fmtMoney()}"
+                    else reason ?: "OPA bloqueada",
+                    fontWeight = FontWeight.Bold, fontSize = 12.sp
+                )
+            }
+            Text(
+                "Compra el 51% con un premium del 20%. Defensas posibles: " +
+                    "Poison Pill, White Knight o Golden Parachute.",
+                color = Dim, fontSize = 10.sp
             )
         } else {
             Spacer(Modifier.height(6.dp))

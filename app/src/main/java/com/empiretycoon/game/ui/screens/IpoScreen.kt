@@ -33,7 +33,7 @@ fun IpoScreen(state: GameState, vm: GameViewModel) {
     ) {
         item { IpoStatusCard(state, vm) }
         when (state.ipo.phase) {
-            IPOPhase.LOCKED -> item { RequirementsCard(state) }
+            IPOPhase.LOCKED -> item { RequirementsCard(state, vm) }
             IPOPhase.PROSPECTUS -> item { ProspectusCard(state, vm) }
             IPOPhase.ROADSHOW -> item { RoadshowCard(state, vm) }
             IPOPhase.LISTED -> {
@@ -75,7 +75,8 @@ private fun IpoStatusCard(state: GameState, vm: GameViewModel) {
 }
 
 @Composable
-private fun RequirementsCard(state: GameState) {
+private fun RequirementsCard(state: GameState, vm: GameViewModel) {
+    val canFile = IPOConstraints.canFileProspectus(state)
     EmpireCard {
         SectionTitle("Requisitos para presentar el folleto")
         Spacer(Modifier.height(6.dp))
@@ -87,6 +88,29 @@ private fun RequirementsCard(state: GameState) {
         ReqRow("Nivel ≥ ${IPOConstraints.MIN_LEVEL}",
             state.company.level.toDouble(),
             IPOConstraints.MIN_LEVEL.toDouble())
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = { vm.fileProspectus() },
+            enabled = canFile,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Gold, contentColor = Ink,
+                disabledContainerColor = InkBorder, disabledContentColor = Dim
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                if (canFile) "Presentar folleto al regulador"
+                else "Cumple los requisitos primero",
+                fontWeight = FontWeight.Bold
+            )
+        }
+        if (canFile) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "El regulador tardará 1 día (1.440 ticks) en revisarlo.",
+                color = Dim, fontSize = 11.sp
+            )
+        }
     }
 }
 

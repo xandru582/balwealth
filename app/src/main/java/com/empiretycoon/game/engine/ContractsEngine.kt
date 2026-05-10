@@ -37,11 +37,16 @@ object ContractsEngine {
         for (c in accepted) {
             when {
                 c.isFulfilled() && !c.completed -> {
-                    // pago + bonus por puntualidad
-                    val pay = c.totalPaymentEstimate + c.bonusOnTime
+                    // pago + bonus por puntualidad — TraitTree CONTRACT_REVENUE_MUL + CASH_GAIN_MUL
+                    val rawPay = c.totalPaymentEstimate + c.bonusOnTime
+                    val contractMul = s.traitTree.multiplierFor(TraitEffectType.CONTRACT_REVENUE_MUL)
+                    val cashMul = s.traitTree.multiplierFor(TraitEffectType.CASH_GAIN_MUL)
+                    val pay = rawPay * contractMul * cashMul
+                    val repGainMul = s.traitTree.multiplierFor(TraitEffectType.REPUTATION_GAIN_MUL)
+                    val repGain = (1 * repGainMul).toInt().coerceAtLeast(1)
                     company = company.copy(
                         cash = company.cash + pay,
-                        reputation = (company.reputation + 1).coerceAtMost(100)
+                        reputation = (company.reputation + repGain).coerceAtMost(100)
                     ).addXp(120)
                     notifications = (notifications + GameNotification(
                         id = System.nanoTime(),
