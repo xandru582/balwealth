@@ -23,9 +23,11 @@ import com.empiretycoon.game.ui.components.EmpireCard
 import com.empiretycoon.game.ui.components.SectionTitle
 import com.empiretycoon.game.ui.screens.jobs.BakerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.ChefJobScreen
+import com.empiretycoon.game.ui.screens.jobs.DetectiveJobScreen
 import com.empiretycoon.game.ui.screens.jobs.FirefighterJobScreen
 import com.empiretycoon.game.ui.screens.jobs.MechanicJobScreen
 import com.empiretycoon.game.ui.screens.jobs.PoliceJobScreen
+import com.empiretycoon.game.ui.screens.jobs.ProgrammerJobScreen
 import com.empiretycoon.game.ui.screens.jobs.TaxiJobScreen
 import com.empiretycoon.game.ui.theme.*
 import com.empiretycoon.game.util.fmtMoney
@@ -62,6 +64,8 @@ fun JobsScreen(state: GameState, vm: GameViewModel) {
             JobId.CHEF -> ChefJobScreen(state, onFinish, onCancel)
             JobId.TAXI_DRIVER -> TaxiJobScreen(state, onFinish, onCancel)
             JobId.CAR_MECHANIC -> MechanicJobScreen(state, onFinish, onCancel)
+            JobId.PROGRAMMER -> ProgrammerJobScreen(state, onFinish, onCancel)
+            JobId.DETECTIVE -> DetectiveJobScreen(state, onFinish, onCancel)
             else -> { activeMiniJob = null }  // safety: no debería ocurrir
         }
         return
